@@ -4,10 +4,10 @@ title: Automatización de notificaciones a proveedores
 tag: "DISPOSITIVOS MÉDICOS   AUTOMATIZACIÓN DE CADENA DE SUMINISTRO"
 summary: El equipo de cadena de suministro de una manufacturera global de dispositivos médicos enviaba a mano cada semana correos a ~50 proveedores sobre órdenes de compra vencidas y próximas a vencer. Lo reemplazamos con un sistema de Power Automate de un clic, con señalización de urgencia integrada y rastro de auditoría.
 cover: /work/supplier-notification-automation/flow-diagram.svg
-client: "Confidencial — manufacturera global de dispositivos médicos"
+client: "Confidencial (manufacturera global de dispositivos médicos)"
 industry: Dispositivos Médicos · Cadena de Suministro Global
 services: Automatización de Procesos, Diseño de Sistemas
-period: Ago – Sep 2025 (en curso)
+period: Ago-Sep 2025 (en curso)
 team: Arquitecto de Automatización
 tools: Power Automate, SharePoint, Outlook
 year: 2025
@@ -19,13 +19,13 @@ context:
     dispositivos médicos mantenía informados a cerca de 50 proveedores sobre
     dos cosas cada semana: órdenes de compra que ya habían pasado su fecha de
     entrega, y órdenes por vencer en los próximos siete días. El proceso era
-    completamente manual — un comprador copiando y pegando números de orden
+    completamente manual: un comprador copiando y pegando números de orden
     desde un reporte de órdenes abiertas hacia correos individuales, cerca de
     140 líneas abiertas por semana, con un tono inconsistente y sin rastro de
     auditoría de a quién se había notificado. El equipo había estandarizado
     en SharePoint Online para los datos de órdenes y Outlook para el
-    contacto, así que cualquier solución tenía que vivir dentro de ese stack
-    — sin infraestructura nueva, sin herramientas nuevas que aprender.
+    contacto, así que cualquier solución tenía que vivir dentro de ese stack,
+    sin infraestructura nueva y sin herramientas nuevas que aprender.
 solution:
   intro: >
     Construimos tres flujos coordinados de Power Automate que convirtieron un
@@ -41,7 +41,7 @@ solution:
     - title: "Correo de urgencia de dos niveles"
       body: >
         Cada proveedor recibe un correo consolidado con una tabla roja de
-        vencidas y una tabla amarilla de próximas a vencer — el asunto y la
+        vencidas y una tabla amarilla de próximas a vencer; el asunto y la
         bandera de importancia de Outlook cambian a URGENTE / Alta cuando
         existen elementos vencidos.
     - title: "Rastro de auditoría por diseño"
@@ -61,12 +61,12 @@ stats:
   - { value: "4", label: "Modos de falla manejados con elegancia" }
 gallery:
   - src: /work/supplier-notification-automation/email-mockup.png
-    caption: Ejemplo de correo de notificación a proveedor — tabla roja de vencidas, tabla amarilla de próximas a vencer, el asunto cambia a URGENTE cuando es necesario.
+    caption: "Ejemplo de correo de notificación a proveedor: tabla roja de vencidas, tabla amarilla de próximas a vencer, el asunto cambia a URGENTE cuando es necesario."
 ---
 
 ## La situación
 
-Un equipo de cadena de suministro en una manufacturera global de dispositivos médicos mantenía a los proveedores al tanto de dos modos de falla: órdenes de compra ya vencidas, y órdenes por vencer en los próximos siete días. Hacerlo a mano significaba que un comprador copiaba números de orden desde un reporte de órdenes abiertas hacia correos individuales, cada semana, para cerca de 50 proveedores y unas 140 líneas abiertas — lento, inconsistente, y sin registro de a quién se había notificado realmente.
+Un equipo de cadena de suministro en una manufacturera global de dispositivos médicos mantenía a los proveedores al tanto de dos modos de falla: órdenes de compra ya vencidas, y órdenes por vencer en los próximos siete días. Hacerlo a mano significaba que un comprador copiaba números de orden desde un reporte de órdenes abiertas hacia correos individuales, cada semana, para cerca de 50 proveedores y unas 140 líneas abiertas: lento, inconsistente, y sin registro de a quién se había notificado realmente.
 
 La restricción era estricta: el equipo había estandarizado en SharePoint Online para los datos de órdenes y Outlook para el contacto, así que la solución tenía que vivir dentro de Power Platform, enviarse desde el buzón propio del equipo, y degradarse con elegancia cuando los registros de proveedores estuvieran incompletos. Infraestructura nueva no era una opción.
 
@@ -74,11 +74,11 @@ La restricción era estricta: el equipo había estandarizado en SharePoint Onlin
 
 Diseñamos y construimos tres flujos en la nube de Power Automate que operan como un pequeño sistema: un flujo masivo de "notificar a todos los proveedores", un flujo de un solo proveedor bajo demanda disparado desde la interfaz de la lista de SharePoint, y una utilidad de reinicio que limpia la lista de órdenes antes de cada recarga semanal de datos.
 
-La columna vertebral de SharePoint son dos listas operativas — una lista de órdenes y una base de datos de proveedores — unidas por número de proveedor, más una lista de registro para la ruta bajo demanda. Cada acción del flujo se mapea al esquema de campos subyacente para que el equipo pueda extenderlo sin romper las uniones.
+La columna vertebral de SharePoint son dos listas operativas, una lista de órdenes y una base de datos de proveedores, unidas por número de proveedor, más una lista de registro para la ruta bajo demanda. Cada acción del flujo se mapea al esquema de campos subyacente para que el equipo pueda extenderlo sin romper las uniones.
 
 Cada correo de notificación es un mensaje HTML de dos tablas generado en línea por el flujo: una tabla con tema rojo de "vencidas" y una tabla con tema amarillo de "vencen en 7 días", cada una renderizada condicionalmente, con el asunto y la bandera de importancia de Outlook cambiando a URGENTE / Alta cuando existe cualquier fila vencida.
 
-También construimos degradación elegante a través de cuatro modos de falla — proveedores sin correo, proveedores sin órdenes coincidentes tras el filtrado, fallas de envío y fallas de lectura — cada uno enrutado a su propia rama de registro o notificación al administrador en lugar de tumbar el flujo a mitad de ciclo. Las órdenes notificadas se marcan de vuelta como Estado = "Notificada" dentro del mismo flujo, dándole al equipo un rastro de auditoría en la lista sin una hoja de cálculo de seguimiento aparte.
+También construimos degradación elegante a través de cuatro modos de falla (proveedores sin correo, proveedores sin órdenes coincidentes tras el filtrado, fallas de envío y fallas de lectura), cada uno enrutado a su propia rama de registro o notificación al administrador en lugar de tumbar el flujo a mitad de ciclo. Las órdenes notificadas se marcan de vuelta como Estado = "Notificada" dentro del mismo flujo, dándole al equipo un rastro de auditoría en la lista sin una hoja de cálculo de seguimiento aparte.
 
 ## El resultado
 
