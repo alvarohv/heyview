@@ -1,0 +1,509 @@
+/**
+ * SDA DETAILS BUILDER — US Site — Office Script v10
+ * ============================================================
+ * v10 changes (US Site):
+ *   - Restored live Supply Adjustment cascade (lost in v9).
+ *     Week data is now written via setFormulas instead of setValues.
+ *     Static rows use literal value formulas (=0, =123) — no empty cells.
+ *     Dynamic rows (Total PP Supply, EOH Units, EOH $, WOH) reference the
+ *     Supply Adjustment row by address, so typing a value cascades instantly.
+ *     BOH RM for weeks 2+ references the prior week's EOH, so a supply
+ *     adjustment in any week cascades forward through all future weeks.
+ *   - FORMULA_BATCH = 8 → 8 × 12 × 52 = 4,992 formula strings per call,
+ *     well under the ~9,000 limit that causes Office Scripts "internal error".
+ *     ~221 setFormulas calls for 1,761 components — well within 5-min timeout.
+ *   - Supply Adjustment resets to =0 on every script run (planners confirmed
+ *     a clean slate on refresh is acceptable).
+ * ============================================================
+ * v9 notes (retained for reference):
+ *   - LOCATION = "10"
+ *   - Material Master: flexible column detection (SharePoint exports)
+ *   - Formatting: header + background + formula-based CF (negative EOH → red)
+ * ============================================================
+ */
+function main(workbook: ExcelScript.Workbook) {
+
+  const LOCATION = "10";
+  const BOM_TYPE = "Primary";
+  const SNAPSHOT_ID = "WW" + getIsoWeekLabel(new Date());
+
+  console.log("=== SDA Details Builder v10 (US Site) ===");
+
+  // ── 1. Week columns from Demand Tracker ──────────────────
+  const dtSheet = workbook.getWorksheet("Demand Tracker");
+  if (!dtSheet) { console.log("ERROR: Demand Tracker not found."); return; }
+
+  const dtColCount = dtSheet.getUsedRange().getColumnCount();
+  const dtHeaderRow = dtSheet.getRangeByIndexes(0, 0, 1, dtColCount)
+    .getValues()[0] as (string | number | boolean)[];
+
+  interface WeekCol { label: string; dtColIdx: number; }
+  const weekCols: WeekCol[] = [];
+  for (let i = 0; i < dtHeaderRow.length; i++) {
+    const v = String(dtHeaderRow[i]).trim();
+    if (/^\d{6}$/.test(v)) weekCols.push({ label: v, dtColIdx: i });
+  }
+  const numWeeks = weekCols.length;
+  const weekLabels = weekCols.map(w => w.label);
+  console.log(`Weeks: ${numWeeks} (${weekLabels[0]} → ${weekLabels[numWeeks - 1]})`);
+
+  // ── 2. Demand Tracker — Adjusted Baseline Demand + PSG ───
+  const dtData = dtSheet.getUsedRange().getValues() as (string | number | boolean)[][];
+  const dtHeader = dtData[0];
+
+  let DT_ITEM_COL = -1, DT_KF_COL = -1, DT_PSG_COL = -1;
+  for (let ci = 0; ci < dtHeader.length; ci++) {
+    const name = String(dtHeader[ci] ?? "").trim();
+    if (name === "Item")              DT_ITEM_COL = ci;
+    if (name === "Key Figure")        DT_KF_COL   = ci;
+    if (name === "Product Sub Group") DT_PSG_COL  = ci;
+  }
+  if (DT_ITEM_COL < 0 || DT_KF_COL < 0) {
+    console.log("ERROR: Demand Tracker missing 'Item' or 'Key Figure'."); return;
+  }
+
+  const fgDemand = new Map<string, number[]>();
+  const fgToPsg  = new Map<string, string>();
+  for (let r = 1; r < dtData.length; r++) {
+    const sku = String(dtData[r][DT_ITEM_COL]).trim();
+    if (!sku) continue;
+    if (String(dtData[r][DT_KF_COL]).trim() === "Adjusted Baseline Demand") {
+      fgDemand.set(sku, weekCols.map(w => Number(dtData[r][w.dtColIdx] ?? 0) || 0));
+    }
+    if (DT_PSG_COL >= 0) {
+      const psg = String(dtData[r][DT_PSG_COL] ?? "").trim();
+      if (psg && !fgToPsg.has(sku)) fgToPsg.set(sku, psg);
+    }
+  }
+  console.log(`FG demand: ${fgDemand.size} rows, PSG: ${fgToPsg.size}`);
+
+  // ── 3. BOM ────────────────────────────────────────────────
+  let bomTable: ExcelScript.Table | undefined;
+  for (const t of workbook.getTables()) {
+    if (t.getName().startsWith("FlatBOM")) { bomTable = t; break; }
+  }
+  if (!bomTable) { console.log("ERROR: No FlatBOM table found."); return; }
+
+  const bomRange    = bomTable.getRangeBetweenHeaderAndTotal();
+  const bomTotalRows = bomRange.getRowCount();
+  const bomStart    = bomRange.getRowIndex();
+  const bomWs       = bomTable.getRange().getWorksheet();
+  const compToFG    = new Map<string, { fgSku: string; qty: number }[]>();
+  const BOM_CHUNK   = 5000;
+  for (let s = 0; s < bomTotalRows; s += BOM_CHUNK) {
+    const n = Math.min(BOM_CHUNK, bomTotalRows - s);
+    const chunk = bomWs.getRangeByIndexes(bomStart + s, 0, n, 7).getValues();
+    for (let i = 0; i < n; i++) {
+      if (String(chunk[i][5]).trim() !== BOM_TYPE ||
+          String(chunk[i][6]).trim() !== LOCATION) continue;
+      const fg   = String(chunk[i][0] ?? "").trim();
+      const comp = String(chunk[i][1] ?? "").trim();
+      const q    = Number(chunk[i][3] ?? 0) || 0;
+      if (!fg || !comp) continue;
+      if (!compToFG.has(comp)) compToFG.set(comp, []);
+      compToFG.get(comp)!.push({ fgSku: fg, qty: q });
+    }
+  }
+  console.log(`Components (${LOCATION}/${BOM_TYPE}): ${compToFG.size}`);
+
+  // ── 4. Demand + PSG per component ────────────────────────
+  const compDemand = new Map<string, number[]>();
+  const compPsg    = new Map<string, string>();
+  for (const [comp, fgList] of Array.from(compToFG.entries())) {
+    const d = new Array<number>(numWeeks).fill(0);
+    const psgSet = new Set<string>();
+    for (const { fgSku, qty } of fgList) {
+      const fd = fgDemand.get(fgSku);
+      if (fd) for (let wi = 0; wi < numWeeks; wi++) d[wi] += fd[wi] * qty;
+      const psg = fgToPsg.get(fgSku);
+      if (psg) psgSet.add(psg);
+    }
+    compDemand.set(comp, d);
+    if (psgSet.size > 0) {
+      const sorted = Array.from(psgSet).sort().map(p => p.replace(" Catheter FG", ""));
+      compPsg.set(comp, sorted.join(" / "));
+    }
+  }
+  console.log(`Components with PSG: ${compPsg.size}`);
+
+  // ── 5. Material Master — flexible column detection ───────
+  const mmSheet    = workbook.getWorksheet("Material Master");
+  const mmDesc     = new Map<string, string>();
+  const mmBuyCode  = new Map<string, string>();
+  const mmBuyName  = new Map<string, string>();
+  const mmCost     = new Map<string, number>();
+  const mmFreight  = new Map<string, number>();
+  const mmLeadTime = new Map<string, number>();
+  let mmLoaded = 0;
+  if (mmSheet) {
+    const mmColCount  = mmSheet.getUsedRange().getColumnCount();
+    const mmHeaderRow = mmSheet.getRangeByIndexes(0, 0, 1, mmColCount)
+      .getValues()[0] as (string | number | boolean)[];
+
+    let MM_SKU = -1, MM_DESC = -1, MM_BC = -1, MM_BN = -1;
+    let MM_LT  = -1, MM_COST = -1, MM_FR  = -1, MM_ORG = -1;
+    for (let ci = 0; ci < mmHeaderRow.length; ci++) {
+      const n = String(mmHeaderRow[ci] ?? "").trim();
+      if (n === "SKU" || n === "Item" || n === "Title")          MM_SKU  = ci;
+      if (n === "Description" || n === "Item Description")        MM_DESC = ci;
+      if (n === "Buyer Code")                                     MM_BC   = ci;
+      if (n === "Buyer Name")                                     MM_BN   = ci;
+      if (n === "Lead Time")                                      MM_LT   = ci;
+      if (n === "Cost" || n === "Material Cost")                  MM_COST = ci;
+      if (n === "Freight" || n === "Unit Freight Cost")           MM_FR   = ci;
+      if (n === "Organization" || n === "Org")                    MM_ORG  = ci;
+    }
+    console.log(`  MM cols: SKU=${MM_SKU} Desc=${MM_DESC} BC=${MM_BC} BN=${MM_BN} ` +
+      `LT=${MM_LT} Cost=${MM_COST} Fr=${MM_FR} Org=${MM_ORG}`);
+
+    if (MM_SKU >= 0) {
+      const mmRows   = mmSheet.getUsedRange().getRowCount();
+      const MM_CHUNK = 2000;
+      for (let s = 1; s < mmRows; s += MM_CHUNK) {
+        const n      = Math.min(MM_CHUNK, mmRows - s);
+        const maxCol = Math.max(MM_SKU, MM_DESC, MM_BC, MM_BN,
+                                MM_LT, MM_COST, MM_FR, MM_ORG) + 1;
+        const chunk  = mmSheet.getRangeByIndexes(s, 0, n, maxCol).getValues();
+        for (let i = 0; i < n; i++) {
+          const sku = String(chunk[i][MM_SKU] ?? "").trim();
+          if (!sku) continue;
+          const org = MM_ORG >= 0 ? String(chunk[i][MM_ORG] ?? "").trim() : "";
+          if (MM_DESC >= 0) mmDesc.set(sku, String(chunk[i][MM_DESC] ?? ""));
+          if (MM_BC >= 0 && (MM_ORG < 0 || org === LOCATION))
+            mmBuyCode.set(sku, String(chunk[i][MM_BC] ?? ""));
+          if (MM_BN >= 0 && (MM_ORG < 0 || org === LOCATION))
+            mmBuyName.set(sku, String(chunk[i][MM_BN] ?? ""));
+          const lt = MM_LT >= 0 ? Number(chunk[i][MM_LT] ?? 0) : 0;
+          if (lt > 0) mmLeadTime.set(sku, lt);
+          const mc = MM_COST >= 0 ? Number(chunk[i][MM_COST] ?? 0) : 0;
+          if (mc) mmCost.set(sku, mc);
+          const fc = MM_FR >= 0 ? Number(chunk[i][MM_FR] ?? 0) : 0;
+          if (fc) mmFreight.set(sku, fc);
+          mmLoaded++;
+        }
+      }
+    }
+  }
+  console.log(`Material Master: ${mmLoaded} items, ${mmLeadTime.size} with lead time`);
+
+  // ── 6. Inventory — RM / RI / MRB ─────────────────────────
+  const invSheet = workbook.getWorksheet("Inventory Details");
+  const invRM  = new Map<string, number>();
+  const invRI  = new Map<string, number>();
+  const invMRB = new Map<string, number>();
+  if (invSheet) {
+    const invRows   = invSheet.getUsedRange().getRowCount();
+    const INV_CHUNK = 3000;
+    for (let s = 1; s < invRows; s += INV_CHUNK) {
+      const n     = Math.min(INV_CHUNK, invRows - s);
+      const chunk = invSheet.getRangeByIndexes(s, 0, n, 10).getValues();
+      for (let i = 0; i < n; i++) {
+        const sku = String(chunk[i][0] ?? "").trim();
+        const org = String(chunk[i][6] ?? "").trim();
+        const qty = Number(chunk[i][8] ?? 0) || 0;
+        const loc = String(chunk[i][9] ?? "").trim();
+        if (!sku || org !== LOCATION) continue;
+        if (loc === "RM")  invRM.set(sku,  (invRM.get(sku)  ?? 0) + qty);
+        if (loc === "RI")  invRI.set(sku,  (invRI.get(sku)  ?? 0) + qty);
+        if (loc === "MRB") invMRB.set(sku, (invMRB.get(sku) ?? 0) + qty);
+      }
+    }
+  }
+  console.log(`Inventory: ${invRM.size} RM, ${invRI.size} RI, ${invMRB.size} MRB`);
+
+  // ── 7. Purchase Orders ────────────────────────────────────
+  const firstWeekLabel = weekLabels[0];
+  const todayWk  = `${isoYear(new Date())}${String(isoWeek(new Date())).padStart(2, "0")}`;
+  const poSheet  = workbook.getWorksheet("Purchase Orders");
+  const poByItemWeek = new Map<string, Map<string, number>>();
+  let poLoaded = 0;
+  if (poSheet) {
+    const poRows   = poSheet.getUsedRange().getRowCount();
+    const PO_CHUNK = 3000;
+    for (let s = 1; s < poRows; s += PO_CHUNK) {
+      const n     = Math.min(PO_CHUNK, poRows - s);
+      const chunk = poSheet.getRangeByIndexes(s, 0, n, 11).getValues();
+      for (let i = 0; i < n; i++) {
+        const bu  = String(chunk[i][0] ?? "").trim();
+        const sku = String(chunk[i][7] ?? "").trim();
+        const qty = Number(chunk[i][9] ?? 0) || 0;
+        if (!sku || bu !== LOCATION || qty <= 0) continue;
+        const d = parseDate(chunk[i][10] as string | number | null);
+        if (!d) continue;
+        const wk = `${isoYear(d)}${String(isoWeek(d)).padStart(2, "0")}`;
+        const effectiveWk = wk < todayWk ? firstWeekLabel : wk;
+        if (!poByItemWeek.has(sku)) poByItemWeek.set(sku, new Map());
+        poByItemWeek.get(sku)!.set(effectiveWk,
+          (poByItemWeek.get(sku)!.get(effectiveWk) ?? 0) + qty);
+        poLoaded++;
+      }
+    }
+  }
+  console.log(`POs: ${poLoaded} lines, ${poByItemWeek.size} items`);
+
+  // ── 8. Component list ─────────────────────────────────────
+  const allComps = Array.from(compToFG.keys()).sort();
+  const components = [
+    ...allComps.filter(s => mmDesc.has(s)),
+    ...allComps.filter(s => !mmDesc.has(s))
+  ];
+
+  const KF_COUNT  = 12;
+  const FIXED_HDR = ["Snapshot ID", "Organization", "Item", "Item Description",
+    "Buyer Code", "Buyer Name", "Product Sub Group", "Key Figure"];
+  const KEY_FIGS  = [
+    "BOH RM (Units)",
+    "BOH RI (Excluded for supply analysis)",
+    "BOH MRB (Excluded for supply analysis)",
+    "BOH Total ($)",
+    "Open Purchase Orders",
+    "Supply Adjustment Total",
+    "Total PP Supply",
+    "Total PP Demand",
+    "Projected EOH (Units)",
+    "Projected EOH ($)",
+    "Freight Cost",
+    "Projected WOH"
+  ];
+  const headerRow = [...FIXED_HDR, ...weekLabels];
+  const totalCols = headerRow.length;
+  const FW        = FIXED_HDR.length; // = 8
+
+  // ── 9. Set up sheet ───────────────────────────────────────
+  let sheet = workbook.getWorksheet("SDA Details");
+  if (!sheet) {
+    sheet = workbook.addWorksheet("SDA Details");
+  } else {
+    for (const t of sheet.getTables()) t.delete();
+    const af = sheet.getAutoFilter();
+    if (af) af.remove();
+    const u = sheet.getUsedRange();
+    if (u) u.clear(ExcelScript.ClearApplyTo.all);
+  }
+
+  const totalDataRows = components.length * KF_COUNT;
+  sheet.getRangeByIndexes(0, 0, 1, totalCols).setValues([headerRow]);
+
+  // ── 10. Fixed columns ─────────────────────────────────────
+  console.log("Writing fixed columns...");
+  const FIXED_BATCH = 30;
+  for (let ci = 0; ci < components.length; ci += FIXED_BATCH) {
+    const batch     = components.slice(ci, Math.min(ci + FIXED_BATCH, components.length));
+    const fixedRows: (string | number)[][] = [];
+    for (const sku of batch) {
+      const desc = mmDesc.get(sku)    ?? "";
+      const bc   = mmBuyCode.get(sku) ?? "";
+      const bn   = mmBuyName.get(sku) ?? "";
+      const psg  = compPsg.get(sku)   ?? "";
+      for (let kfi = 0; kfi < KF_COUNT; kfi++)
+        fixedRows.push([SNAPSHOT_ID, LOCATION, sku, desc, bc, bn, psg, KEY_FIGS[kfi]]);
+    }
+    sheet.getRangeByIndexes(1 + ci * KF_COUNT, 0, fixedRows.length, FW).setValues(fixedRows);
+  }
+  console.log("Fixed columns written");
+
+  // ── 11. Write ALL week data as live Excel formulas ────────
+  // KEY DECISION: setFormulas (not setValues) so Supply Adjustment
+  // cascades live into Total PP Supply, EOH Units, EOH $, and WOH.
+  // BOH RM weeks 2+ reference the prior week's EOH row, so an adjustment
+  // in any week ripples forward through all future weeks automatically.
+  // Static rows (BOH RI, MRB, Open POs, Demand, Freight) embed pre-computed
+  // values as literal formulas (=0, =123) — cleaner than setValues blanks.
+  //
+  // KF index → Excel row offset within each component block:
+  //  kfi  0  BOH RM (Units)              row bStart+1
+  //  kfi  1  BOH RI                      row bStart+2
+  //  kfi  2  BOH MRB                     row bStart+3
+  //  kfi  3  BOH Total ($)               row bStart+4
+  //  kfi  4  Open Purchase Orders        row bStart+5
+  //  kfi  5  Supply Adjustment Total     row bStart+6  ← planner types here
+  //  kfi  6  Total PP Supply             row bStart+7  ← references kfi 5
+  //  kfi  7  Total PP Demand             row bStart+8
+  //  kfi  8  Projected EOH (Units)       row bStart+9  ← references kfi 6,7
+  //  kfi  9  Projected EOH ($)           row bStart+10 ← references kfi 8
+  //  kfi 10  Freight Cost                row bStart+11
+  //  kfi 11  Projected WOH               row bStart+12 ← references kfi 8
+  //
+  // FORMULA_BATCH = 8 → 8 × 12 × 52 = 4,992 formula strings per call
+  // (safely under the ~9,000 limit that triggers Office Scripts "internal error").
+
+  console.log("Writing week formulas...");
+  const FORMULA_BATCH = 8;
+
+  for (let ci = 0; ci < components.length; ci += FORMULA_BATCH) {
+    const batchEnd  = Math.min(ci + FORMULA_BATCH, components.length);
+    const batchSize = batchEnd - ci;
+    const gridRows  = batchSize * KF_COUNT;
+    const grid: string[][] = [];
+
+    for (let bi = 0; bi < batchSize; bi++) {
+      const sku     = components[ci + bi];
+      const mc      = mmCost.get(sku)    ?? 0;
+      const fc      = mmFreight.get(sku) ?? 0;
+      const demand  = compDemand.get(sku) ?? new Array<number>(numWeeks).fill(0);
+      const pohWeek = poByItemWeek.get(sku);
+      const bohRmW1  = invRM.get(sku)  ?? 0;
+      const bohRiW1  = invRI.get(sku)  ?? 0;
+      const bohMrbW1 = invMRB.get(sku) ?? 0;
+
+      // 0-based sheet row of this component's first KF row (row 1 = header)
+      const bStart = 1 + (ci + bi) * KF_COUNT;
+      // Excel 1-based row numbers used in cross-row formula references
+      const eRM  = bStart + 1;  // kfi 0  BOH RM
+      const eRI  = bStart + 2;  // kfi 1  BOH RI
+      const eMRB = bStart + 3;  // kfi 2  BOH MRB
+      const ePO  = bStart + 5;  // kfi 4  Open POs
+      const eAdj = bStart + 6;  // kfi 5  Supply Adjustment ← planner types here
+      const eSup = bStart + 7;  // kfi 6  Total PP Supply
+      const eDem = bStart + 8;  // kfi 7  Total PP Demand
+      const eEoh = bStart + 9;  // kfi 8  Projected EOH Units
+
+      for (let kfi = 0; kfi < KF_COUNT; kfi++) {
+        const row: string[] = [];
+        for (let wi = 0; wi < numWeeks; wi++) {
+          const C     = colToLetter(FW + wi + 1); // current week col (1-based)
+          const Cprev = colToLetter(FW + wi);      // prior week col
+          let f = "=0";
+
+          if (kfi === 0) {
+            // BOH RM: W1 = opening inventory; W2+ = prior week's EOH
+            // This is what makes Supply Adjustment cascade across all future weeks
+            f = wi === 0 ? `=${bohRmW1}` : `=${Cprev}${eEoh}`;
+          } else if (kfi === 1) {
+            f = wi === 0 ? `=${bohRiW1}` : `=0`;
+          } else if (kfi === 2) {
+            f = wi === 0 ? `=${bohMrbW1}` : `=0`;
+          } else if (kfi === 3) {
+            f = `=(${C}${eRM}+${C}${eRI}+${C}${eMRB})*${mc}`;
+          } else if (kfi === 4) {
+            const v = pohWeek?.get(weekLabels[wi]) ?? 0;
+            f = `=${v}`;
+          } else if (kfi === 5) {
+            // Supply Adjustment: seeded to 0; resets on every script run
+            f = `=0`;
+          } else if (kfi === 6) {
+            // Total PP Supply = BOH RM + Open POs + Supply Adjustment
+            f = `=${C}${eRM}+${C}${ePO}+${C}${eAdj}`;
+          } else if (kfi === 7) {
+            f = `=${demand[wi]}`;
+          } else if (kfi === 8) {
+            // Projected EOH = Total PP Supply − Total PP Demand
+            f = `=${C}${eSup}-${C}${eDem}`;
+          } else if (kfi === 9) {
+            f = `=${C}${eEoh}*${mc}`;
+          } else if (kfi === 10) {
+            f = wi === 0 ? `=${fc}` : `=0`;
+          } else if (kfi === 11) {
+            // WOH = IFERROR(EOH / AVERAGE(next 24 weeks of demand), 0)
+            const endWeekIdx = Math.min(wi + 23, numWeeks - 1);
+            const CEnd = colToLetter(FW + endWeekIdx + 1);
+            f = `=IFERROR(${C}${eEoh}/AVERAGE(${C}${eDem}:${CEnd}${eDem}),0)`;
+          }
+          row.push(f);
+        }
+        grid.push(row);
+      }
+    }
+
+    sheet.getRangeByIndexes(1 + ci * KF_COUNT, FW, gridRows, numWeeks).setFormulas(grid);
+    if (ci % 200 === 0 || batchEnd === components.length)
+      console.log(`  ${batchEnd}/${components.length} components`);
+  }
+  console.log("All week formulas written");
+
+  // ── 12. Formatting ────────────────────────────────────────
+  console.log("Formatting...");
+  const totalRows = 1 + totalDataRows;
+
+  // Header
+  const hdrRange = sheet.getRangeByIndexes(0, 0, 1, totalCols);
+  hdrRange.getFormat().getFill().setColor("1F3864");
+  hdrRange.getFormat().getFont().setColor("FFFFFF");
+  hdrRange.getFormat().getFont().setBold(true);
+
+  // White background for all data
+  sheet.getRangeByIndexes(1, 0, totalDataRows, totalCols)
+    .getFormat().getFill().setColor("FFFFFF");
+
+  // Number formats — applied to the entire week data area in two calls
+  // Units / integers: rows for kfi 0,1,2,4,5,6,7,8 — use #,##0 for whole area
+  sheet.getRangeByIndexes(1, FW, totalDataRows, numWeeks)
+    .setNumberFormat("#,##0");
+  // WOH (kfi 11) and EOH $ (kfi 9) and BOH Total $ (kfi 3) ideally want
+  // different formats but selecting non-contiguous rows requires per-component
+  // calls. Acceptable tradeoff: let planners format manually or see raw numbers.
+
+  // Conditional format: negative EOH rows → red fill, white text
+  // Applied to the entire week-data range with a formula that checks
+  // (a) the row is an EOH row: MOD(ROW() - 2, 12) = 8   [kfi 8 = 0-indexed]
+  // (b) the cell value < 0
+  // Excel row 2 = first data row (kfi 0, comp 0); EOH row = 2 + 8 = 10
+  // MOD(10 - 2, 12) = 8  ✓   MOD(22 - 2, 12) = 8  ✓  (every 12th from row 10)
+  const weekDataRange = sheet.getRangeByIndexes(1, FW, totalDataRows, numWeeks);
+  const cfNeg    = weekDataRange.addConditionalFormat(ExcelScript.ConditionalFormatType.custom);
+  const customCf = cfNeg.getCustom();
+  // Top-left cell of weekDataRange = Excel row 2, col (FW+1 in 1-based) = col I
+  const topLeftCol = colToLetter(FW + 1); // e.g. "I"
+  // getRule().setFormula() is the correct Office Scripts API for custom CFs
+  customCf.getRule().setFormula(`=AND(MOD(ROW()-2,12)=8,${topLeftCol}2<0)`);
+  customCf.getFormat().getFill().setColor("FF0000");
+  customCf.getFormat().getFont().setColor("FFFFFF");
+
+  // Conditional format: first row of each component (kfi 0 = BOH RM) → blue background
+  // Acts as a visual separator between components.
+  // MOD(ROW()-2, 12) = 0 matches row 2, 14, 26 … (every 12th row from the first data row)
+  const fullDataRange = sheet.getRangeByIndexes(1, 0, totalDataRows, totalCols);
+  const cfBlue    = fullDataRange.addConditionalFormat(ExcelScript.ConditionalFormatType.custom);
+  const customCfBlue = cfBlue.getCustom();
+  customCfBlue.getRule().setFormula(`=MOD(ROW()-2,12)=0`);
+  customCfBlue.getFormat().getFill().setColor("BDD7EE");
+
+  console.log("Formatting complete");
+
+  // ── 13. Table ─────────────────────────────────────────────
+  const tableRange = sheet.getRangeByIndexes(0, 0, totalRows, totalCols);
+  const sdaTable   = workbook.addTable(tableRange, true);
+  sdaTable.setName("SDADetails");
+  sdaTable.setShowBandedRows(false);
+
+  for (let c = 0; c < FW; c++)
+    sheet.getRangeByIndexes(0, c, totalRows, 1).getFormat().autofitColumns();
+  sheet.getRangeByIndexes(0, FW, 1, numWeeks).getFormat().setColumnWidth(80);
+
+  sheet.activate();
+  console.log(`=== DONE === Components:${components.length} Weeks:${numWeeks} Rows:${totalRows}`);
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function parseDate(val: string | number | null): Date | null {
+  if (!val) return null;
+  if (typeof val === "number") return new Date(Math.round((val - 25569) * 86400000));
+  const d = new Date(String(val));
+  return isNaN(d.getTime()) ? null : d;
+}
+function isoWeek(d: Date): number {
+  const u   = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = u.getUTCDay() || 7;
+  u.setUTCDate(u.getUTCDate() + 4 - day);
+  const y0  = new Date(Date.UTC(u.getUTCFullYear(), 0, 1));
+  return Math.ceil(((u.getTime() - y0.getTime()) / 86400000 + 1) / 7);
+}
+function isoYear(d: Date): number {
+  const u   = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = u.getUTCDay() || 7;
+  u.setUTCDate(u.getUTCDate() + 4 - day);
+  return u.getUTCFullYear();
+}
+function getIsoWeekLabel(d: Date): string {
+  return `${isoYear(d)}.${String(isoWeek(d)).padStart(2, "0")}`;
+}
+function colToLetter(col: number): string {
+  let l = "";
+  while (col > 0) {
+    const m = (col - 1) % 26;
+    l = String.fromCharCode(65 + m) + l;
+    col = Math.floor((col - 1) / 26);
+  }
+  return l;
+}

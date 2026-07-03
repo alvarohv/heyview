@@ -1,37 +1,18 @@
 ---
 import { CAL_LINK, CAL_CONFIG } from '../config';
+import { useTranslations } from '../i18n/utils';
 
-const steps = [
-  {
-    number: '01',
-    title: 'Discovery',
-    body: "We map how the work actually happens, not how the org chart says it happens. Expect uncomfortable questions.",
-  },
-  {
-    number: '02',
-    title: 'Strategy',
-    body: "You get a written plan: what we'll build, what it replaces, and a fixed quote. You know the full cost before we write a line of code.",
-  },
-  {
-    number: '03',
-    title: 'Execution',
-    body: "We build it. You see progress every week, on the real system, not in slides.",
-  },
-  {
-    number: '04',
-    title: 'Handoff',
-    body: "You own everything: documented, transferred, explained. If we did our job, you don't need us afterward.",
-  },
-];
+const dict = useTranslations(Astro.currentLocale);
+const t = dict.process;
 ---
 
 <section id="process" class="grain bg-cream px-5 md:px-16 py-24"
   style="border-bottom: 0.5px solid #E7E1D6;">
 
-  <span class="eyebrow text-navy/60 block mb-6">Our process</span>
+  <span class="eyebrow text-navy/60 block mb-6">{t.eyebrow}</span>
 
   <h2 class="font-serif text-[32px] md:text-[40px] text-navy font-normal mb-20 leading-tight">
-    Four stages. No surprises.
+    {t.headline}
   </h2>
 
   <div class="relative">
@@ -39,7 +20,7 @@ const steps = [
     <div class="absolute bg-cream-border left-[5px] top-0 bottom-0 w-px md:left-0 md:top-[5px] md:bottom-auto md:w-full md:h-px"></div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 relative z-10">
-      {steps.map((step) => (
+      {t.steps.map((step) => (
         <div class="flex flex-row md:flex-col gap-6 md:gap-0">
 
           <!-- Timeline dot -->
@@ -72,7 +53,7 @@ const steps = [
       data-cal-config={CAL_CONFIG}
       class="bg-navy text-cream px-8 py-4 font-sans text-[13px] font-medium tracking-wide hover:opacity-90 transition-opacity uppercase cursor-pointer"
     >
-      Book a discovery call
+      {dict.common.bookDiscoveryCall}
     </button>
   </div>
 

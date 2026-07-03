@@ -1,4 +1,5 @@
 ---
+lang: en
 title: Manufacturing capacity planning system
 tag: "MEDICAL DEVICES   POWER PLATFORM"
 summary: A multi-site capacity planning system for a global medical device manufacturer — replacing a 350MB, 143-sheet spreadsheet with a live Power Platform model across two sites and six departments.

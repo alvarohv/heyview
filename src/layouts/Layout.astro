@@ -3,6 +3,7 @@ import '../styles/global.css';
 import { SITE, SOCIALS } from '../config';
 import PostHog from '../components/posthog.astro';
 import { ClientRouter } from 'astro:transitions';
+import { useTranslations, ogLocale, getAlternateUrls } from '../i18n/utils';
 
 interface Props {
   title?: string;
@@ -15,9 +16,12 @@ interface Props {
   noindex?: boolean;
 }
 
+const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
+const t = useTranslations(locale);
+
 const {
-  title = 'HeyView — Design & AI systems for complex operations',
-  description = SITE.description,
+  title = t.common.defaultTitle,
+  description = t.common.description,
   image = SITE.ogImage,
   type = 'website',
   noindex = false,
@@ -26,6 +30,7 @@ const {
 // Absolute URLs require `site` in astro.config.mjs (read via Astro.site).
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(image, Astro.site);
+const alternates = getAlternateUrls(Astro.url.pathname, Astro.site!);
 
 // JSON-LD: helps Google rich results AND gives LLMs/AI crawlers clean,
 // machine-readable facts about who HeyView is.
@@ -35,8 +40,9 @@ const orgSchema = {
   name: SITE.legalName,
   alternateName: SITE.name,
   url: Astro.site?.href,
-  description: SITE.description,
-  slogan: SITE.tagline,
+  description: t.common.description,
+  slogan: t.common.tagline,
+  inLanguage: locale,
   foundingLocation: SITE.country,
   founder: SITE.founders.map((name) => ({ '@type': 'Person', name })),
   sameAs: Object.values(SOCIALS),
@@ -46,11 +52,12 @@ const websiteSchema = {
   '@type': 'WebSite',
   name: SITE.name,
   url: Astro.site?.href,
+  inLanguage: locale,
 };
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -60,6 +67,9 @@ const websiteSchema = {
     <meta name="description" content={description} />
     <meta name="theme-color" content="#F5F0E8" />
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={alternates.en} />
+    <link rel="alternate" hreflang="es" href={alternates.es} />
+    <link rel="alternate" hreflang="x-default" href={alternates.xDefault} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <ClientRouter />
 
@@ -70,7 +80,7 @@ const websiteSchema = {
     <meta property="og:type" content={type} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale" content={ogLocale(locale)} />
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />

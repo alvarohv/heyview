@@ -1,7 +1,9 @@
 // ─── Central site configuration ──────────────────────────────────────────────
 
 /**
- * Canonical site identity. Used for SEO meta, Open Graph, and JSON-LD.
+ * Canonical site identity — brand facts that don't change between locales.
+ * Marketing copy (tagline, description) lives in `src/i18n/en.ts`/`es.ts`
+ * instead, since that's language-specific content, not identity.
  * The production URL itself lives in `astro.config.mjs` (`site`) and is read
  * via `Astro.site` — keep these two in sync.
  */
@@ -10,9 +12,6 @@ export const SITE = {
   legalName: 'HeyView Studio',
   /** Used as <title> suffix and og:site_name. */
   shortName: 'HeyView',
-  tagline: 'Clarity for complex systems.',
-  description:
-    'We design the systems and experiences that make your business sharper, faster, and easier to scale. Automation, design, and AI for businesses that run on complex operations.',
   /** Default social-share image, served from /public. 1200×630 recommended. */
   ogImage: '/og-image.jpg',
   founders: ['Alvaro Hernandez', 'Sinaí Alfaro'],

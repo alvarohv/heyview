@@ -1,12 +1,14 @@
 ---
 import { SITE, SOCIALS } from '../config';
+import { useTranslations, getRelativeLocaleUrl } from '../i18n/utils';
 
-const nav = [
-  { label: 'Work',           href: '/work' },
-  { label: 'Process',        href: '/#process' },
-  { label: 'Contact',        href: '/#contact' },
-  { label: 'Privacy Policy', href: '/privacy-policy' },
-];
+const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
+const t = useTranslations(locale);
+
+const nav = t.footer.nav.map((link) => ({
+  ...link,
+  href: link.localized ? getRelativeLocaleUrl(locale, link.href) : link.href,
+}));
 ---
 
 <footer class="bg-primary">
@@ -21,13 +23,13 @@ const nav = [
           {SITE.name}
         </span>
         <p class="font-sans text-[13px] footer-muted">
-          Automation, design, and AI for complex operations.
+          {t.footer.tagline}
         </p>
       </div>
 
       <!-- Editorial closing statement -->
       <p class="font-serif font-light footer-statement md:text-right" style="font-size: clamp(1.25rem, 1.5vw, 1.75rem); line-height: 1.2; letter-spacing: -0.01em; color: rgba(245,240,232,0.65);">
-        Built for operations that demand more.
+        {t.footer.statement}
       </p>
 
     </div>

@@ -1,0 +1,662 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════
+ *  DEMAND TRACKER BUILDER — Office Script (Combined)
+ *  SWAV What-If Tool
+ * ═══════════════════════════════════════════════════════════════════════
+ *
+ *  Builds the Demand Tracker from scratch each run (clean slate):
+ *    1. Reads FG items from FlatBOM table
+ *    2. Reads baseline demand from 'Atlas  Demand' sheet (if present)
+ *    3. Creates 4 key-figure rows per FG:
+ *         - Baseline Demand         (from Atlas, editable)
+ *         - Adjusted Demand (Delta) (planner editable, seeded 0)
+ *         - Adjusted Baseline Demand = Baseline + Delta
+ *         - % Variance = (Adjusted - Baseline) / Adjusted
+ *    4. Fills Item Description + Product Sub Group from Atlas
+ *    5. Formats and creates Excel table
+ *    6. Builds 'Demand Summary' tab — monthly totals by Product Sub Group
+ *       (replaces the summary previously generated in the Clean Data script)
+ *
+ *  REPLACES: separate Demand Tracker Builder + Atlas Demand Parser
+ *
+ *  RUN WHEN: After pasting fresh Atlas data, or to reset the tracker.
+ *  RUNTIME:  ~15–30 sec (batched writes)
+ * ═══════════════════════════════════════════════════════════════════════
+ */
+
+function main(workbook: ExcelScript.Workbook) {
+  // ─── PARAMETERS ─────────────────────────────────────────────────────
+  const LOCATION         = "10";
+  const BOM_TYPE         = "Primary";
+  const NUM_WEEKS        = 52;
+  const DEFAULT_BASELINE = 0;
+  const ATLAS_SHEET_NAME = "Atlas  Demand";  // Also tries "Atlas Demand" as fallback
+  const SNAPSHOT_ID      = "WW" + getIsoWeekLabel(new Date());
+  // ─── END PARAMETERS ────────────────────────────────────────────────
+
+  console.log("=== Demand Tracker Builder (Combined) ===");
+
+  // ═══ PART 1: READ FG ITEMS FROM BOM ═══════════════════════════════
+
+  const bomTable = findTableByPrefix(workbook, "FlatBOM");
+  if (!bomTable) { console.log("ERROR: No table starting with 'FlatBOM' found."); return; }
+  console.log(`Using BOM table: "${bomTable.getName()}"`);
+
+  const bomRange = bomTable.getRangeBetweenHeaderAndTotal();
+  const bomTotalRows = bomRange.getRowCount();
+  const bomStartRow = bomRange.getRowIndex();
+  const bomSheet = bomTable.getRange().getWorksheet();
+
+  const fgSkus: string[] = [];
+  const seenSkus = new Set<string>();
+  const CHUNK = 5000;
+
+  for (let s = 0; s < bomTotalRows; s += CHUNK) {
+    const n = Math.min(CHUNK, bomTotalRows - s);
+    const skuVals  = bomSheet.getRangeByIndexes(bomStartRow + s, 0, n, 1).getValues();
+    const typeVals = bomSheet.getRangeByIndexes(bomStartRow + s, 5, n, 1).getValues();
+    const locVals  = bomSheet.getRangeByIndexes(bomStartRow + s, 6, n, 1).getValues();
+    for (let i = 0; i < n; i++) {
+      const sku = String(skuVals[i][0] ?? "").trim();
+      const bt  = String(typeVals[i][0] ?? "").trim();
+      const loc = String(locVals[i][0] ?? "").trim();
+      if (sku && bt === BOM_TYPE && loc === LOCATION && !seenSkus.has(sku)) {
+        fgSkus.push(sku);
+        seenSkus.add(sku);
+      }
+    }
+  }
+  console.log(`FG items from BOM: ${fgSkus.length}`);
+  if (fgSkus.length === 0) { console.log("No FG items found."); return; }
+
+  // ═══ PART 2: READ ATLAS DEMAND (if available) ═════════════════════
+
+  let srcSheet = workbook.getWorksheet(ATLAS_SHEET_NAME);
+  if (!srcSheet) srcSheet = workbook.getWorksheet("Atlas Demand");  // fallback
+
+  const demandBySku = new Map<string, Map<string, number>>();
+  const descBySku = new Map<string, string>();
+  const psgBySku = new Map<string, string>();
+
+  if (srcSheet) {
+    console.log("Reading Atlas Demand...");
+    const srcRange = srcSheet.getUsedRange();
+    if (srcRange) {
+      const srcValues = srcRange.getValues();
+      console.log(`  Atlas: ${srcValues.length} rows × ${srcValues[0].length} cols`);
+
+      // Auto-detect header row
+      let hri = -1;
+      for (let ri = 0; ri < Math.min(5, srcValues.length); ri++) {
+        for (let ci = 0; ci < Math.min(10, srcValues[ri].length); ci++) {
+          const v = String(srcValues[ri][ci] ?? "").trim();
+          if (v === "SeriesID" || v === "Description" || v === "Opinion") { hri = ri; break; }
+        }
+        if (hri >= 0) break;
+      }
+
+      // Fallback: check if row 0 has date-like columns
+      if (hri < 0) {
+        for (let ci = 0; ci < srcValues[0].length; ci++) {
+          const v = srcValues[0][ci];
+          if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(String(v ?? "").trim()) ||
+              (typeof v === "number" && v > 44000 && v < 47000 && Number.isInteger(v))) {
+            hri = 0; break;
+          }
+        }
+      }
+
+      if (hri >= 0) {
+        const header = srcValues[hri];
+        const hMap = new Map<string, number>();
+        for (let ci = 0; ci < header.length; ci++) {
+          const nm = String(header[ci] ?? "").trim();
+          if (nm) hMap.set(nm, ci);
+        }
+
+        const skuCol = hMap.get("SeriesID") ?? hMap.get("Description") ?? -1;
+        const descCol = hMap.get("Item Description") ?? -1;
+        const psgCol = hMap.get("Product Sub Group") ?? -1;
+        const descFallbackCol = hMap.get("Description") ?? -1;
+
+        // Date columns → ISO week labels
+        const datePattern = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+        const colToWeek = new Map<number, string>();
+        for (let ci = 0; ci < header.length; ci++) {
+          const raw = header[ci];
+          const str = String(raw ?? "").trim();
+          if (datePattern.test(str)) {
+            const wk = dateToIsoWeekLabel(str);
+            if (wk) colToWeek.set(ci, wk);
+          } else {
+            const num = Number(raw);
+            if (!isNaN(num) && num > 44000 && num < 47000 && Number.isInteger(num)) {
+              const wk = excelSerialToIsoWeekLabel(num);
+              if (wk) colToWeek.set(ci, wk);
+            }
+          }
+        }
+
+        console.log(`  Date cols: ${colToWeek.size}, SKU col: ${skuCol}, PSG col: ${psgCol}`);
+
+        const SUFFIXES = [`. ${LOCATION}.`, ` ${LOCATION}.`];
+
+        for (let ri = hri + 1; ri < srcValues.length; ri++) {
+          const row = srcValues[ri];
+          if (skuCol < 0) continue;
+          const rawSku = String(row[skuCol] ?? "").trim();
+          if (!rawSku) continue;
+          const sku = extractSku(rawSku, SUFFIXES);
+          if (!sku) continue;
+
+          // Item Description
+          if (descCol >= 0) {
+            const d = String(row[descCol] ?? "").trim();
+            if (d && !descBySku.has(sku)) descBySku.set(sku, d);
+          }
+          if (!descBySku.has(sku) && descFallbackCol >= 0) {
+            const parsed = parseDescField(String(row[descFallbackCol] ?? ""), sku, SUFFIXES);
+            if (parsed) descBySku.set(sku, parsed);
+          }
+
+          // Product Sub Group
+          if (psgCol >= 0) {
+            const p = String(row[psgCol] ?? "").trim();
+            if (p && !psgBySku.has(sku)) psgBySku.set(sku, p);
+          }
+
+          // Weekly demand
+          const existing = demandBySku.get(sku);
+          const weekMap = existing ?? new Map<string, number>();
+          for (const [ci, wkLabel] of colToWeek) {
+            const val = Number(row[ci] ?? 0);
+            if (!isNaN(val) && val !== 0) {
+              const rounded = Math.round(val);
+              if (rounded !== 0) {
+                const prev = weekMap.get(wkLabel) ?? 0;
+                weekMap.set(wkLabel, existing ? prev + rounded : rounded);
+              }
+            }
+          }
+          if (weekMap.size > 0) demandBySku.set(sku, weekMap);
+        }
+
+        console.log(`  SKUs with demand: ${demandBySku.size}`);
+        console.log(`  Descriptions: ${descBySku.size}, PSGs: ${psgBySku.size}`);
+      }
+    }
+  } else {
+    console.log("Atlas Demand sheet not found — building with zero baseline.");
+  }
+
+  // ═══ PART 3: GENERATE WEEK COLUMNS ════════════════════════════════
+
+  interface WeekCol { label: string; isEoQ: boolean; }
+  const weekCols: WeekCol[] = [];
+  let currentDate = new Date();
+  let weeksAdded = 0;
+  let lastQuarter = getQuarter(currentDate);
+
+  while (weeksAdded < NUM_WEEKS) {
+    const yr = getIsoYear(currentDate);
+    const wk = getIsoWeek(currentDate);
+    const q  = getQuarter(currentDate);
+
+    if (weeksAdded > 0 && q !== lastQuarter) {
+      weekCols.push({ label: "End of Quarter", isEoQ: true });
+    }
+    lastQuarter = q;
+    weekCols.push({ label: `${yr}${String(wk).padStart(2, "0")}`, isEoQ: false });
+    weeksAdded++;
+    currentDate = addDays(currentDate, 7);
+  }
+  weekCols.push({ label: "End of Quarter", isEoQ: true });
+
+  const weekLabels = weekCols.map(w => w.label);
+  const numWeekCols = weekCols.length;
+  console.log(`Week columns: ${numWeekCols} (${NUM_WEEKS} weeks + ${weekCols.filter(c => c.isEoQ).length} EoQ)`);
+
+  // ═══ PART 4: BUILD SHEET ══════════════════════════════════════════
+
+  const FIXED_HEADERS = ["Snapshot ID", "Organization", "Item", "Item Description",
+                         "Buyer Code", "Product Sub Group", "Key Figure"];
+  const FW = FIXED_HEADERS.length;
+  const KEY_FIGURES = [
+    "Baseline Demand",
+    "Adjusted Demand (Delta)",
+    "Adjusted Baseline Demand",
+    "% Variance against Original Plan"
+  ];
+  const KF_COUNT = KEY_FIGURES.length;
+  const headerRow = [...FIXED_HEADERS, ...weekLabels];
+  const totalCols = headerRow.length;
+  const totalRows = 1 + fgSkus.length * KF_COUNT;
+
+  // Delete existing and create fresh
+  let sheet = workbook.getWorksheet("Demand Tracker");
+  if (sheet) {
+    const tables = sheet.getTables();
+    for (const t of tables) t.delete();
+    const af = sheet.getAutoFilter();
+    if (af) af.remove();
+    const u = sheet.getUsedRange();
+    if (u) u.clear(ExcelScript.ClearApplyTo.all);
+  } else {
+    sheet = workbook.addWorksheet("Demand Tracker");
+  }
+
+  // Write header
+  sheet.getRangeByIndexes(0, 0, 1, totalCols).setValues([headerRow]);
+
+  // ═══ PART 5: WRITE FIXED COLUMNS (batched) ════════════════════════
+
+  console.log("Writing fixed columns...");
+  const BATCH = 30;
+  for (let ci = 0; ci < fgSkus.length; ci += BATCH) {
+    const batch = fgSkus.slice(ci, Math.min(ci + BATCH, fgSkus.length));
+    const rows: (string | number)[][] = [];
+    for (const sku of batch) {
+      const desc = descBySku.get(sku) ?? "";
+      const psg  = psgBySku.get(sku)  ?? "";
+      for (let kfi = 0; kfi < KF_COUNT; kfi++) {
+        rows.push([SNAPSHOT_ID, LOCATION, sku, desc, "", psg, KEY_FIGURES[kfi]]);
+      }
+    }
+    sheet.getRangeByIndexes(1 + ci * KF_COUNT, 0, rows.length, FW).setValues(rows);
+  }
+
+  // ═══ PART 6: WRITE WEEK DATA AS FORMULAS (batched) ════════════════
+
+  console.log("Writing week data...");
+  const FORMULA_BATCH = 15;
+
+  for (let ci = 0; ci < fgSkus.length; ci += FORMULA_BATCH) {
+    const batchEnd = Math.min(ci + FORMULA_BATCH, fgSkus.length);
+    const batchSize = batchEnd - ci;
+    const gridRows = batchSize * KF_COUNT;
+    const grid: string[][] = [];
+
+    for (let bi = 0; bi < batchSize; bi++) {
+      const sku = fgSkus[ci + bi];
+      const bStart = 1 + (ci + bi) * KF_COUNT;  // 0-based sheet row
+
+      // Excel 1-based row refs for formulas
+      const eBase  = bStart + 1;  // Baseline Demand
+      const eDelta = bStart + 2;  // Adjusted Demand (Delta)
+      const eAdj   = bStart + 3;  // Adjusted Baseline Demand
+
+      // Get Atlas demand for this SKU
+      const skuDemand = demandBySku.get(sku);
+
+      for (let kfi = 0; kfi < KF_COUNT; kfi++) {
+        const row: string[] = [];
+
+        for (let wi = 0; wi < numWeekCols; wi++) {
+          const col = weekCols[wi];
+          const C = colToLetter(FW + wi + 1);  // current col letter (1-based)
+
+          if (col.isEoQ) {
+            // Find block start (scan left to prev EoQ or beginning)
+            let blockStart = wi - 1;
+            while (blockStart >= 0 && !weekCols[blockStart].isEoQ) blockStart--;
+            blockStart++;
+            const startL = colToLetter(FW + blockStart + 1);
+            const endL   = colToLetter(FW + wi);  // col before this EoQ
+
+            if (kfi === 0) {
+              row.push(`=SUM(${startL}${eBase}:${endL}${eBase})`);
+            } else if (kfi === 1) {
+              row.push(`=SUM(${startL}${eDelta}:${endL}${eDelta})`);
+            } else if (kfi === 2) {
+              row.push(`=SUM(${startL}${eAdj}:${endL}${eAdj})`);
+            } else {
+              // % Variance EoQ = (Adjusted - Baseline) / Adjusted
+              row.push(`=IFERROR((${C}${eAdj}-${C}${eBase})/${C}${eAdj},0)`);
+            }
+          } else {
+            // Regular week
+            if (kfi === 0) {
+              // Baseline Demand — from Atlas or default
+              const val = skuDemand?.get(col.label) ?? DEFAULT_BASELINE;
+              row.push(`=${val}`);
+            } else if (kfi === 1) {
+              // Adjusted Demand (Delta) — editable, seed 0
+              row.push(`=0`);
+            } else if (kfi === 2) {
+              // Adjusted Baseline = Baseline + Delta
+              row.push(`=${C}${eBase}+${C}${eDelta}`);
+            } else {
+              // % Variance = (Adjusted - Baseline) / Adjusted
+              row.push(`=IFERROR((${C}${eAdj}-${C}${eBase})/${C}${eAdj},0)`);
+            }
+          }
+        }
+        grid.push(row);
+      }
+    }
+
+    sheet.getRangeByIndexes(1 + ci * KF_COUNT, FW, gridRows, numWeekCols).setFormulas(grid);
+    console.log(`  Batch ${ci + 1}–${batchEnd}`);
+  }
+
+  // ═══ PART 7: FORMATTING ═══════════════════════════════════════════
+
+  console.log("Formatting...");
+  const NAVY   = "1F3864";
+  const WHITE  = "FFFFFF";
+
+  // Header
+  const hdr = sheet.getRangeByIndexes(0, 0, 1, totalCols);
+  hdr.getFormat().getFill().setColor(NAVY);
+  hdr.getFormat().getFont().setColor(WHITE);
+  hdr.getFormat().getFont().setBold(true);
+
+  // Per-item formatting — no backgrounds, just bold + number formats
+  const FMT_CHUNK = 60;
+  for (let ci = 0; ci < fgSkus.length; ci += FMT_CHUNK) {
+    const end = Math.min(ci + FMT_CHUNK, fgSkus.length);
+    for (let c = ci; c < end; c++) {
+      const b = 1 + c * KF_COUNT;
+
+      // Baseline — bold
+      sheet.getRangeByIndexes(b, 0, 1, totalCols).getFormat().getFont().setBold(true);
+
+      // Delta — bold
+      sheet.getRangeByIndexes(b + 1, 0, 1, totalCols).getFormat().getFont().setBold(true);
+
+      // % Variance — percent format
+      sheet.getRangeByIndexes(b + 3, FW, 1, numWeekCols).setNumberFormat("0%");
+
+      // Number format for demand rows (Baseline + Delta + Adjusted)
+      sheet.getRangeByIndexes(b, FW, 3, numWeekCols).setNumberFormat("#,##0");
+    }
+    console.log(`  Styled ${ci + 1}–${end}`);
+  }
+
+  // EoQ columns — navy
+  for (let wi = 0; wi < numWeekCols; wi++) {
+    if (weekCols[wi].isEoQ) {
+      const colRange = sheet.getRangeByIndexes(0, FW + wi, totalRows, 1);
+      colRange.getFormat().getFont().setBold(true);
+      colRange.getFormat().getFill().setColor(NAVY);
+      colRange.getFormat().getFont().setColor(WHITE);
+    }
+  }
+
+  // Freeze + auto-fit
+  sheet.getFreezePanes().freezeRows(1);
+  sheet.getFreezePanes().freezeColumns(FW);
+  for (let c = 0; c < FW; c++) {
+    sheet.getRangeByIndexes(0, c, totalRows, 1).getFormat().autofitColumns();
+  }
+  for (let c = FW; c < totalCols; c++) {
+    sheet.getRangeByIndexes(0, c, 1, 1).getFormat().setColumnWidth(70);
+  }
+
+  // Hide Buyer Code column (col 4)
+  sheet.getRangeByIndexes(0, 4, totalRows, 1).getFormat().setColumnWidth(0);
+
+  // ═══ PART 8: CREATE TABLE ═════════════════════════════════════════
+
+  const tableRange = sheet.getRangeByIndexes(0, 0, totalRows, totalCols);
+  const tbl = workbook.addTable(tableRange, true);
+  tbl.setName("DemandTracker");
+  tbl.setShowBandedRows(false);
+
+  sheet.activate();
+
+  // ═══ PART 9: DEMAND SUMMARY TAB ═══════════════════════════════════
+  // Builds a monthly summary by Product Sub Group from the same Atlas
+  // demand data already loaded above.  Replaces the summary previously
+  // produced by the Clean Data script.
+
+  console.log("Building Demand Summary...");
+
+  const SUMMARY_SHEET = "Demand Summary";
+  const MON_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  // ── 9a: Derive ordered month list from weekCols ──────────────────
+  const monthOrder: string[] = [];
+  const monthSet = new Set<string>();
+  for (const wc of weekCols) {
+    if (wc.isEoQ) continue;
+    const d = isoWeekLabelToDate(wc.label);
+    if (!d) continue;
+    const mKey = `${MON_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+    if (!monthSet.has(mKey)) { monthSet.add(mKey); monthOrder.push(mKey); }
+  }
+
+  // ── 9b: Aggregate baseline demand by PSG × month ─────────────────
+  const psgTotals = new Map<string, Map<string, number>>();
+  const grandTotals = new Map<string, number>();
+
+  for (const [sku, weekMap] of demandBySku) {
+    const psg = psgBySku.get(sku) ?? "Uncategorized";
+    if (!psgTotals.has(psg)) psgTotals.set(psg, new Map<string, number>());
+    const mMap = psgTotals.get(psg)!;
+    for (const [wkLabel, val] of weekMap) {
+      const d = isoWeekLabelToDate(wkLabel);
+      if (!d) continue;
+      const mKey = `${MON_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+      mMap.set(mKey, (mMap.get(mKey) ?? 0) + val);
+      grandTotals.set(mKey, (grandTotals.get(mKey) ?? 0) + val);
+    }
+  }
+
+  const psgNames = Array.from(psgTotals.keys()).sort();
+  console.log(`  ${psgNames.length} groups × ${monthOrder.length} months`);
+
+  // ── 9c: Write the summary sheet ──────────────────────────────────
+  let existingSummary = workbook.getWorksheet(SUMMARY_SHEET);
+  if (existingSummary) existingSummary.delete();
+  const sumSheet = workbook.addWorksheet(SUMMARY_SHEET);
+  const sumColCount = monthOrder.length + 2;  // PSG col + months + Total col
+
+  // Title
+  sumSheet.getCell(0, 0).setValue("Monthly Baseline Demand by Product Sub Group");
+  sumSheet.getCell(0, 0).getFormat().getFont().setBold(true);
+  sumSheet.getCell(0, 0).getFormat().getFont().setSize(14);
+  sumSheet.getCell(0, 0).getFormat().getFont().setColor("#1F4E79");
+
+  // Subtitle
+  sumSheet.getCell(1, 0).setValue(
+    `Source: Atlas Demand (Baseline) · FG items · ${fgSkus.length} SKUs · ${demandBySku.size} with demand`
+  );
+  sumSheet.getCell(1, 0).getFormat().getFont().setSize(10);
+  sumSheet.getCell(1, 0).getFormat().getFont().setColor("#808080");
+  sumSheet.getCell(1, 0).getFormat().getFont().setItalic(true);
+
+  // Table header
+  const tblHeaderRow = 3;
+  const tblHeaders: (string | number | boolean)[] = ["Product Sub Group", ...monthOrder, "Total"];
+  sumSheet.getRangeByIndexes(tblHeaderRow, 0, 1, sumColCount).setValues([tblHeaders]);
+  const tblHdrRange = sumSheet.getRangeByIndexes(tblHeaderRow, 0, 1, sumColCount);
+  tblHdrRange.getFormat().getFont().setBold(true);
+  tblHdrRange.getFormat().getFill().setColor("#1F4E79");
+  tblHdrRange.getFormat().getFont().setColor("#FFFFFF");
+  tblHdrRange.getFormat().setHorizontalAlignment(ExcelScript.HorizontalAlignment.CENTER);
+  sumSheet.getCell(tblHeaderRow, 0).getFormat().setHorizontalAlignment(ExcelScript.HorizontalAlignment.LEFT);
+
+  // Data rows
+  for (let pi = 0; pi < psgNames.length; pi++) {
+    const psg = psgNames[pi];
+    const mMap = psgTotals.get(psg)!;
+    const rowData: (string | number | boolean)[] = [psg];
+    let rowTotal = 0;
+    for (const month of monthOrder) {
+      const v = mMap.get(month) ?? 0;
+      rowData.push(v);
+      rowTotal += v;
+    }
+    rowData.push(rowTotal);
+    const ri = tblHeaderRow + 1 + pi;
+    sumSheet.getRangeByIndexes(ri, 0, 1, sumColCount).setValues([rowData]);
+    if (pi % 2 === 0) {
+      sumSheet.getRangeByIndexes(ri, 0, 1, sumColCount).getFormat().getFill().setColor("#D6E4F0");
+    }
+  }
+
+  // Grand total row
+  const totalRI = tblHeaderRow + 1 + psgNames.length;
+  const totalData: (string | number | boolean)[] = ["TOTAL"];
+  let grandTotal = 0;
+  for (const month of monthOrder) {
+    const v = grandTotals.get(month) ?? 0;
+    totalData.push(v);
+    grandTotal += v;
+  }
+  totalData.push(grandTotal);
+  sumSheet.getRangeByIndexes(totalRI, 0, 1, sumColCount).setValues([totalData]);
+  const totRange = sumSheet.getRangeByIndexes(totalRI, 0, 1, sumColCount);
+  totRange.getFormat().getFont().setBold(true);
+  totRange.getFormat().getFill().setColor("#1F4E79");
+  totRange.getFormat().getFont().setColor("#FFFFFF");
+
+  // Number format
+  sumSheet.getRangeByIndexes(tblHeaderRow + 1, 1, psgNames.length + 1, monthOrder.length + 1)
+          .setNumberFormat("#,##0");
+
+  // Column widths
+  sumSheet.getRangeByIndexes(tblHeaderRow, 0, psgNames.length + 2, 1).getFormat().autofitColumns();
+  for (let sc = 1; sc < sumColCount; sc++) {
+    sumSheet.getRangeByIndexes(tblHeaderRow, sc, 1, 1).getFormat().setColumnWidth(75);
+  }
+
+  // ── 9d: Stacked column chart ──────────────────────────────────────
+  const chartDataRange = sumSheet.getRangeByIndexes(
+    tblHeaderRow, 0, psgNames.length + 1, monthOrder.length + 1
+  );
+  const chart = sumSheet.addChart(ExcelScript.ChartType.columnStacked, chartDataRange);
+  chart.setPosition(sumSheet.getCell(totalRI + 2, 0));
+  chart.setWidth(780);
+  chart.setHeight(400);
+  chart.getTitle().setText("Monthly FG Demand by Product Sub Group");
+  chart.getTitle().getFormat().getFont().setSize(13);
+  chart.getTitle().getFormat().getFont().setBold(true);
+  chart.getLegend().setPosition(ExcelScript.ChartLegendPosition.BOTTOM);
+
+  console.log(`  Grand Total: ${grandTotal.toLocaleString()} units`);
+
+  // ═══ SUMMARY ══════════════════════════════════════════════════════
+  console.log("═══════════════════════════════════════════════════");
+  console.log("  Demand Tracker Builder complete.");
+  console.log(`  FG items:            ${fgSkus.length}`);
+  console.log(`  Weeks:               ${NUM_WEEKS} + ${weekCols.filter(c => c.isEoQ).length} EoQ`);
+  console.log(`  Baseline from Atlas: ${demandBySku.size} SKUs`);
+  console.log(`  Descriptions filled: ${descBySku.size}`);
+  console.log(`  Product Sub Groups:  ${psgBySku.size}`);
+  console.log(`  Demand Summary:      ${psgNames.length} groups × ${monthOrder.length} months`);
+  console.log(`  Grand Total:         ${grandTotal.toLocaleString()} units`);
+  console.log(`  Snapshot:            ${SNAPSHOT_ID}`);
+  console.log("═══════════════════════════════════════════════════");
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Finds the first table whose name starts with the given prefix (case-insensitive).
+ * Allows the table to be renamed (e.g. FlatBOM → FlatBOM6) without breaking the script.
+ */
+function findTableByPrefix(
+  workbook: ExcelScript.Workbook,
+  prefix: string
+): ExcelScript.Table | undefined {
+  const lowerPrefix = prefix.toLowerCase();
+  return workbook
+    .getTables()
+    .find(t => t.getName().toLowerCase().startsWith(lowerPrefix));
+}
+
+/**
+ * Converts a 6-char ISO week label (e.g. "202618") to the Monday Date
+ * of that week.  Used by Part 9 to bucket weeks into calendar months.
+ */
+function isoWeekLabelToDate(label: string): Date | null {
+  if (!label || label.length !== 6) return null;
+  const year = parseInt(label.substring(0, 4), 10);
+  const week = parseInt(label.substring(4, 6), 10);
+  if (isNaN(year) || isNaN(week) || week < 1 || week > 53) return null;
+  // Jan 4 is always in ISO week 1
+  const jan4    = new Date(year, 0, 4);
+  const jan4Day = jan4.getDay() || 7;           // Mon=1 … Sun=7
+  const monday  = new Date(jan4.getTime()
+    - (jan4Day - 1) * 86400000                  // back to Monday of wk 1
+    + (week - 1)    * 7 * 86400000);             // forward to requested week
+  return isNaN(monday.getTime()) ? null : monday;
+}
+
+function extractSku(raw: string, suffixes: string[]): string | null {
+  let val = raw.trim();
+  if (!val) return null;
+  for (const s of suffixes) { if (val.endsWith(s)) { val = val.substring(0, val.length - s.length).trim(); break; } }
+  if (/^[A-Z]{2}\d+[-]\S+$/.test(val)) return val;
+  const dot = val.indexOf(".");
+  if (dot > 0) { const b = val.substring(0, dot).trim(); if (/^[A-Z]{2}\d+[-]\S+$/.test(b)) return b; }
+  if (val.includes("-") && /\d{4,}/.test(val)) {
+    for (const t of val.split(/\s+/)) { if (/^[A-Z]{2}\d+[-]\S+$/.test(t.replace(/\.$/, ""))) return t.replace(/\.$/, ""); }
+  }
+  return null;
+}
+
+function parseDescField(fullDesc: string, sku: string, suffixes: string[]): string | null {
+  let val = fullDesc.trim();
+  if (!val) return null;
+  for (const s of suffixes) { if (val.endsWith(s)) { val = val.substring(0, val.length - s.length).trim(); break; } }
+  if (val.startsWith(sku + ".")) val = val.substring(sku.length + 1).trim();
+  if (val.endsWith(".")) val = val.substring(0, val.length - 1).trim();
+  return val || null;
+}
+
+function excelSerialToIsoWeekLabel(serial: number): string | null {
+  const adj = serial > 59 ? serial - 1 : serial;
+  const epoch = new Date(Date.UTC(1899, 11, 30));
+  const date = new Date(epoch.getTime() + adj * 86400000);
+  if (isNaN(date.getTime())) return null;
+  const yr = getIsoYear(date); const wk = getIsoWeek(date);
+  return `${yr}${String(wk).padStart(2, '0')}`;
+}
+
+function dateToIsoWeekLabel(dateStr: string): string | null {
+  const m = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const d = new Date(parseInt(m[3]), parseInt(m[1]) - 1, parseInt(m[2]));
+  if (isNaN(d.getTime())) return null;
+  const yr = getIsoYear(d); const wk = getIsoWeek(d);
+  return `${yr}${String(wk).padStart(2, '0')}`;
+}
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date); d.setDate(d.getDate() + days); return d;
+}
+
+function getIsoWeek(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - y0.getTime()) / 86400000 + 1) / 7);
+}
+
+function getIsoYear(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  return d.getUTCFullYear();
+}
+
+function getIsoWeekLabel(d: Date): string {
+  return `${getIsoYear(d)}.${String(getIsoWeek(d)).padStart(2, "0")}`;
+}
+
+function getQuarter(date: Date): number {
+  return Math.floor(date.getMonth() / 3) + 1;
+}
+
+function colToLetter(col: number): string {
+  let l = "";
+  while (col > 0) { const m = (col - 1) % 26; l = String.fromCharCode(65 + m) + l; col = Math.floor((col - 1) / 26); }
+  return l;
+}

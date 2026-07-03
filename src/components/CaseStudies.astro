@@ -1,25 +1,30 @@
 ---
 import { getCollection } from 'astro:content';
 import WorkCard from './WorkCard.astro';
+import { useTranslations } from '../i18n/utils';
+
+const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
 
 // Single source of truth: projects live in src/content/work/*.md.
-const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
-  (a, b) => a.data.order - b.data.order,
-);
+const projects = (
+  await getCollection('work', ({ data }) => !data.draft && data.lang === locale)
+).sort((a, b) => a.data.order - b.data.order);
 
 const featured = projects.find((p) => p.data.featured) ?? projects[0];
 const sideProjects = projects.filter((p) => p.id !== featured?.id).slice(0, 2);
+
+const t = useTranslations(locale).caseStudies;
 ---
 
 <section id="work" class="bg-navy px-5 md:px-16 py-24">
 
   <div class="flex justify-between items-end mb-16">
     <div>
-      <span class="eyebrow text-accent-green block mb-6">Selected Work</span>
-      <h2 class="font-serif text-[32px] md:text-[40px] text-cream font-normal">The work.</h2>
+      <span class="eyebrow text-accent-green block mb-6">{t.eyebrow}</span>
+      <h2 class="font-serif text-[32px] md:text-[40px] text-cream font-normal">{t.headline}</h2>
     </div>
     <a href="/work" class="group inline-flex items-center gap-2 font-sans text-[13px] font-semibold tracking-widest uppercase text-muted-soft hover:text-cream transition-colors duration-200 whitespace-nowrap">
-      <span class="underline-offset-4 group-hover:underline">View all work</span>
+      <span class="underline-offset-4 group-hover:underline">{t.viewAll}</span>
       <span
         class="material-symbols-outlined translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300"
         style="font-size: 17px; font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;"

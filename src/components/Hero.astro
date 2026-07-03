@@ -1,9 +1,7 @@
 ---
-const pillars = [
-  'Systems that work',
-  'Human design',
-  'Clarity that transforms',
-];
+import { useTranslations } from '../i18n/utils';
+
+const t = useTranslations(Astro.currentLocale).hero;
 ---
 
 <section id="main-content" class="grain bg-cream" style="border-bottom: 0.5px solid var(--color-cream-border);">
@@ -11,19 +9,19 @@ const pillars = [
   <!-- Hero content — single column, full width -->
   <div class="px-5 md:px-16 pt-16 pb-20 md:pt-24 md:pb-36 lg:pt-32 lg:pb-44 max-w-[1200px]">
 
-    <span class="eyebrow text-navy/60 mb-6 block">AI · Automation · Design</span>
+    <span class="eyebrow text-navy/60 mb-6 block">{t.eyebrow}</span>
 
     <h1
       class="font-serif font-normal leading-[0.95] text-navy mb-8 text-[52px] md:text-[80px] lg:text-[108px]"
       style="letter-spacing: -0.03em;"
     >
-      <span class="block">Design &amp; AI systems</span>
-      <span class="block">for businesses that run</span>
-      <span class="block text-accent">on complex operations.</span>
+      <span class="block">{t.headline[0]}</span>
+      <span class="block">{t.headline[1]}</span>
+      <span class="block text-accent">{t.headline[2]}</span>
     </h1>
 
     <p class="font-sans text-[17px] md:text-[20px] text-muted leading-relaxed max-w-[560px] mb-12">
-      We design the systems and experiences that make your business sharper, faster, and easier to scale.
+      {t.subhead}
     </p>
 
     <div class="flex flex-col sm:flex-row gap-4 mb-8">
@@ -32,7 +30,7 @@ const pillars = [
         class="inline-flex items-center justify-center text-navy px-8 py-4 font-sans text-[13px] font-medium hover:bg-navy/5 transition-colors whitespace-nowrap"
         style="border: 0.5px solid #1E2A38;"
       >
-        See our work →
+        {t.cta}
       </a>
     </div>
 
@@ -42,13 +40,13 @@ const pillars = [
   <!-- Bottom strip: brand pillars -->
   <div class="px-5 md:px-16 py-6" style="border-top: 0.5px solid var(--color-cream-border);">
     <div class="grid grid-cols-1 md:grid-cols-3">
-      {pillars.map((pillar, i) => (
+      {t.pillars.map((pillar, i) => (
         <div
           class:list={[
             'flex items-center justify-center py-3 md:py-0',
-            i < pillars.length - 1 ? 'md:border-r' : '',
+            i < t.pillars.length - 1 ? 'md:border-r' : '',
           ]}
-          style={i < pillars.length - 1 ? 'border-color: var(--color-cream-border); border-right-width: 0.5px;' : ''}
+          style={i < t.pillars.length - 1 ? 'border-color: var(--color-cream-border); border-right-width: 0.5px;' : ''}
         >
           <span class="eyebrow text-navy flex items-center gap-2">
             <span class="inline-block w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0"></span>

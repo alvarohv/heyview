@@ -1,29 +1,20 @@
 ---
-const verticals = [
-  {
-    label: 'Specialty practices',
-    description: 'Booking, no-show recovery, and a practice dashboard for clinics that are growing.',
-    href: '/health',
-  },
-  {
-    label: 'Finance & operations',
-    description: 'Close, reporting, and reconciliation rebuilt to run in days, not weeks.',
-    href: '#contact', // TODO: update to /finance-ops when built
-  },
-  {
-    label: 'Your industry',
-    description: 'The systems are reusable. Tell us your operation.',
-    href: '#contact',
-  },
-];
+import { useTranslations, getRelativeLocaleUrl } from '../i18n/utils';
+
+const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
+const t = useTranslations(locale).whoWeWorkWith;
+const verticals = t.verticals.map((v) => ({
+  ...v,
+  href: v.localized ? getRelativeLocaleUrl(locale, v.href) : v.href,
+}));
 ---
 
 <section class="bg-primary px-5 md:px-16 py-24" style="border-bottom: 0.5px solid rgba(245,240,232,0.1);">
 
-  <span class="eyebrow block mb-6" style="color: rgba(245,240,232,0.45);">Who we work with</span>
+  <span class="eyebrow block mb-6" style="color: rgba(245,240,232,0.45);">{t.eyebrow}</span>
 
   <h2 class="font-serif text-[32px] md:text-[40px] text-cream leading-tight mb-12">
-    Built for operations, sharpened by industry.
+    {t.headline}
   </h2>
 
   <div class="grid grid-cols-1 md:grid-cols-3">
@@ -45,7 +36,7 @@ const verticals = [
           {v.description}
         </p>
         <span class="font-sans text-[13px] font-medium transition-colors" style="color: rgba(245,240,232,0.5);">
-          Tell us about your operation →
+          {t.ctaLabel}
         </span>
       </a>
     ))}

@@ -1,0 +1,282 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../../layouts/Layout.astro';
+import Navbar from '../../../components/Navbar.astro';
+import Footer from '../../../components/Footer.astro';
+import { CAL_LINK, CAL_NAMESPACE, CAL_CONFIG } from '../../../config';
+import { workSlug } from '../../../content.config';
+import { useTranslations, getRelativeLocaleUrl } from '../../../i18n/utils';
+
+const t = useTranslations('es').workPage;
+
+const projects = (
+  await getCollection('work', ({ data }) => !data.draft && data.lang === 'es')
+).sort((a, b) => a.data.order - b.data.order);
+
+const featured = projects.find((p) => p.data.featured) ?? projects[0];
+const rest = projects.filter((p) => p.id !== featured?.id);
+
+// Split "RETAIL DE LUJO   DISEÑO WEB" → ["Retail de lujo", "Diseño web"]
+function splitTag(tag: string): [string, string] {
+  const parts = tag.split(/\s{2,}/);
+  const fmt = (s: string) =>
+    s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  return parts.length >= 2 ? [fmt(parts[0]), fmt(parts[1])] : [fmt(parts[0]), ''];
+}
+---
+
+<Layout
+  title={t.title}
+  description={t.description}
+>
+  <div class="max-w-360 mx-auto relative shadow-sm">
+    <Navbar transition:persist />
+
+    <main id="main-content">
+
+      <!-- ── Hero ── -->
+      <section class="grain bg-navy px-5 md:px-16 pt-20 pb-14">
+        <span class="eyebrow text-accent block mb-5">{t.eyebrow}</span>
+        <h1 class="font-serif text-[48px] md:text-[64px] text-cream font-light leading-tight mb-5">
+          {t.headline}
+        </h1>
+        <p class="font-sans text-[17px] leading-relaxed max-w-2xl" style="color: rgba(245,240,232,0.65);">
+          {t.subhead}
+        </p>
+
+        <!-- Filter pills -->
+        <nav aria-label="Filtrar proyectos por categoría" class="flex flex-wrap gap-3 mt-12">
+          {t.filters.map((label, i) => (
+            <button
+              data-filter={label.toLowerCase()}
+              class:list={['filter-btn', i === 0 && 'is-active']}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+      </section>
+
+      <!-- ── Featured Project ── -->
+      {featured && (() => {
+        const { title, summary, tag, cover, confidential } = featured.data;
+        const href = confidential ? '#contact' : getRelativeLocaleUrl('es', `/work/${workSlug(featured.id)}`);
+        return (
+          <section data-filter-card data-tags={tag.toLowerCase()} class="group relative px-5 md:px-16 py-20 flex flex-col md:flex-row gap-12 md:gap-16 items-center bg-cream">
+            <a href={href} class="absolute inset-0 z-10" aria-label={title}></a>
+
+            <!-- Image -->
+            <div class="w-full md:w-[60%] aspect-[16/10] overflow-hidden flex-shrink-0 relative z-0"
+              style="background-color: #E7E1D6;">
+              {cover ? (
+                <img
+                  src={cover}
+                  alt={title}
+                  class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                  loading="eager"
+                  transition:name={`cover-${featured.id}`}
+                />
+              ) : (
+                <div class="w-full h-full flex items-center justify-center"
+                  style="background: linear-gradient(135deg, #ddd7cd 0%, #ccc6bc 100%);">
+                  <span class="eyebrow text-navy/25">{t.projectPreview}</span>
+                </div>
+              )}
+            </div>
+
+            <!-- Text -->
+            <div class="w-full md:w-[40%] flex flex-col gap-5 relative z-20">
+              <span class="eyebrow text-accent">{t.featuredLabel}</span>
+              <h2 class="font-serif text-[32px] md:text-[40px] text-navy font-normal leading-tight">
+                {title}
+              </h2>
+              <p class="font-sans text-[17px] leading-relaxed text-muted">
+                {summary}
+              </p>
+              <div class="pt-4">
+                <span
+                  class="inline-flex items-center gap-2 font-sans text-[13px] font-semibold tracking-widest uppercase text-navy group-hover:text-accent transition-colors duration-200 relative z-20"
+                >
+                  <span class="underline-offset-4 group-hover:underline">
+                    {confidential ? t.requestCaseStudy : t.viewCaseStudy}
+                  </span>
+                  <span
+                    class="material-symbols-outlined translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300"
+                    style="font-size: 17px; font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;"
+                  >arrow_forward</span>
+                </span>
+              </div>
+            </div>
+
+          </section>
+        );
+      })()}
+
+      <!-- hairline -->
+      <div data-featured-divider style="height: 0.5px; background-color: #E7E1D6; margin: 0 4rem;" class="hidden md:block" />
+
+      <!-- ── Project Grid ── -->
+      <section class="px-5 md:px-16 py-20 bg-cream">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-20">
+
+          {rest.map((project) => {
+            const { title, summary, tag, cover, confidential } = project.data;
+            const href = confidential ? '#contact' : getRelativeLocaleUrl('es', `/work/${workSlug(project.id)}`);
+            const [cat1, cat2] = splitTag(tag);
+            return (
+              <article data-filter-card data-tags={tag.toLowerCase()} class="group relative flex flex-col gap-6">
+                <a href={href} class="absolute inset-0 z-10" aria-label={title}></a>
+                <div class="block overflow-hidden aspect-[4/3] relative z-0" style="background-color: #E7E1D6;">
+                  {cover ? (
+                    <img
+                      src={cover}
+                      alt={title}
+                      class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                      loading="lazy"
+                      transition:name={`cover-${project.id}`}
+                    />
+                  ) : (
+                    <div class="w-full h-full flex items-center justify-center"
+                      style="background: linear-gradient(135deg, #ddd7cd 0%, #ccc6bc 100%);">
+                      <span class="eyebrow text-navy/25">{t.projectPreview}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div class="flex flex-col gap-3">
+                  <div class="flex items-center gap-3">
+                    <span class="eyebrow text-accent">{cat1}</span>
+                    {cat2 && (
+                      <>
+                        <span class="w-1 h-1 rounded-full bg-navy/20" />
+                        <span class="eyebrow text-accent">{cat2}</span>
+                      </>
+                    )}
+                  </div>
+                  <h3 class="font-serif text-[22px] text-navy font-medium leading-snug">
+                    {title}
+                  </h3>
+                  <p class="font-sans text-[15px] leading-relaxed text-muted max-w-sm">
+                    {summary}
+                  </p>
+                  <div class="pt-2">
+                    <span
+                      class="inline-flex items-center gap-2 font-sans text-[12px] font-semibold tracking-widest uppercase text-navy group-hover:text-accent transition-colors duration-200 relative z-20"
+                    >
+                      <span class="underline-offset-4 group-hover:underline">
+                        {confidential ? t.requestCaseStudy : t.viewCaseStudy}
+                      </span>
+                      <span
+                        class="material-symbols-outlined translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300"
+                        style="font-size: 16px; font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;"
+                      >arrow_forward</span>
+                    </span>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+
+        </div>
+      </section>
+
+      <!-- ── CTA ── -->
+      <section class="grain bg-navy px-5 md:px-16 py-24 flex flex-col items-center text-center gap-10">
+        <h2 class="font-serif font-light text-cream leading-tight md:whitespace-nowrap"
+          style="font-size: clamp(1.75rem, 3.5vw, 2.75rem); letter-spacing: -0.01em;">
+          {t.ctaHeadline}
+        </h2>
+        <button
+          data-cal-link={CAL_LINK}
+          data-cal-namespace={CAL_NAMESPACE}
+          data-cal-config={CAL_CONFIG}
+          class="font-sans text-[12px] font-semibold tracking-widest uppercase text-cream cursor-pointer hover:bg-cream hover:text-navy transition-colors duration-300 px-8 py-4"
+          style="border: 0.5px solid rgba(245,240,232,0.5);"
+        >
+          {t.ctaButton}
+        </button>
+      </section>
+
+    </main>
+
+    <Footer />
+  </div>
+<style>
+  .filter-btn {
+    padding: 0.5rem 1.25rem;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: 0.5px solid rgba(245, 240, 232, 0.12);
+    color: rgba(245, 240, 232, 0.4);
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  }
+  .filter-btn:hover {
+    color: rgba(245, 240, 232, 0.75);
+    border-color: rgba(245, 240, 232, 0.3);
+  }
+  .filter-btn.is-active {
+    background-color: rgba(245, 240, 232, 0.12);
+    color: rgba(245, 240, 232, 1);
+    border-color: rgba(245, 240, 232, 0.25);
+  }
+  [data-filter-card][hidden] {
+    display: none !important;
+  }
+</style>
+
+<script>
+  const KEYWORDS: Record<string, string[]> = {
+    'todos':          [],
+    'web':            ['web'],
+    'marca':          ['marca'],
+    'sistemas de ia': ['ia', 'automatización'],
+    'dashboard':      ['dashboard', 'platform'],
+  };
+
+  function matchesFilter(tags: string, filter: string): boolean {
+    if (filter === 'todos') return true;
+    const keywords = KEYWORDS[filter] ?? [filter];
+    return keywords.some((kw) => tags.includes(kw));
+  }
+
+  const buttons  = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
+  const cards    = document.querySelectorAll<HTMLElement>('[data-filter-card]');
+  const divider  = document.querySelector<HTMLElement>('[data-featured-divider]');
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const filter = btn.dataset.filter ?? 'todos';
+
+      // Update active button
+      buttons.forEach((b) => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+
+      // Show / hide each card
+      cards.forEach((card) => {
+        if (filter === 'todos') {
+          card.hidden = false;
+          return;
+        }
+        // Placeholders always hide when a specific filter is active
+        if ('placeholder' in card.dataset) {
+          card.hidden = true;
+          return;
+        }
+        const tags = card.dataset.tags ?? '';
+        card.hidden = !matchesFilter(tags, filter);
+      });
+
+      // Hide the featured↔grid divider when the featured card is hidden
+      if (divider) {
+        const featuredCard = document.querySelector<HTMLElement>('[data-filter-card][data-tags]');
+        divider.hidden = !!(featuredCard && featuredCard.hidden);
+      }
+    });
+  });
+</script>
+</Layout>

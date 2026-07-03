@@ -1,4 +1,5 @@
 ---
+lang: en
 title: CoolBrand CR — Store Redesign
 tag: "LUXURY RETAIL   WEB DESIGN"
 summary: Brand-aligned Shopify redesign for Costa Rica's premier luxury watch and jewelry consignment boutique — dark editorial aesthetic, WhatsApp-first conversion path, 0 to 100+ inquiries.

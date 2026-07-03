@@ -1,5 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
+import { workSlug } from '../content.config';
+import { useTranslations, getRelativeLocaleUrl } from '../i18n/utils';
 
 interface Props {
   project: CollectionEntry<'work'>;
@@ -9,12 +11,13 @@ interface Props {
 }
 
 const { project, variant = 'compact', class: className = '' } = Astro.props;
-const { title, summary, tag, cover, confidential } = project.data;
+const { title, summary, tag, cover, confidential, lang } = project.data;
+const t = useTranslations(lang).caseStudies;
 
 // Confidential work has no detail page — point at contact instead.
 const hasPage = !confidential;
-const href = hasPage ? `/work/${project.id}` : '#contact';
-const cta = hasPage ? 'View project →' : 'Request case study →';
+const href = hasPage ? getRelativeLocaleUrl(lang, `/work/${workSlug(project.id)}`) : '#contact';
+const cta = hasPage ? t.viewProject : t.requestCaseStudy;
 const featured = variant === 'featured';
 ---
 

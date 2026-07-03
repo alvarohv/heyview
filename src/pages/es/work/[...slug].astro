@@ -1,0 +1,350 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import Layout from '../../../layouts/Layout.astro';
+import Navbar from '../../../components/Navbar.astro';
+import Footer from '../../../components/Footer.astro';
+import JnjStory from '../../../components/work/JnjStory.es.astro';
+import CoolBrandStory from '../../../components/work/CoolBrandStory.es.astro';
+import CaseStudyStory from '../../../components/work/CaseStudyStory.astro';
+import Gallery from '../../../components/Gallery.astro';
+import { CAL_LINK, CAL_NAMESPACE, CAL_CONFIG } from '../../../config';
+import { workSlug } from '../../../content.config';
+import { useTranslations, getRelativeLocaleUrl } from '../../../i18n/utils';
+
+const customStories: Record<string, any> = {
+  'capacity-planning-system': JnjStory,
+  'coolbrand': CoolBrandStory,
+};
+
+export const getStaticPaths = (async () => {
+  const projects = await getCollection(
+    'work',
+    ({ data }) => !data.draft && !data.confidential && data.lang === 'es',
+  );
+  return projects.map((project) => ({
+    params: { slug: workSlug(project.id) },
+    props: { project },
+  }));
+}) satisfies GetStaticPaths;
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const slug = workSlug(project.id);
+const CustomStory = customStories[slug];
+const t = useTranslations('es').workDetail;
+const { title, summary, tag, cover, client, year, industry, services, period, team, tools, stats, gallery, context, solution, results, testimonial } =
+  project.data;
+
+const pageUrl = new URL(getRelativeLocaleUrl('es', `/work/${slug}`), Astro.site).href;
+const workIndexHref = getRelativeLocaleUrl('es', '/work');
+
+// Split "DISPOSITIVOS MÉDICOS   POWER PLATFORM" → ["Dispositivos médicos", "Power platform"]
+const categories = tag
+  .split(/\s{2,}/)
+  .map((s: string) => s.trim())
+  .filter(Boolean);
+
+const metaServices = services ?? industry;
+
+const allProjects = (
+  await getCollection(
+    'work',
+    ({ data }) => !data.draft && !data.confidential && data.lang === 'es',
+  )
+).sort((a, b) => (a.data.order ?? 100) - (b.data.order ?? 100));
+const currentIdx = allProjects.findIndex((p) => p.id === project.id);
+const prevProject = currentIdx > 0 ? allProjects[currentIdx - 1] : null;
+const nextProject =
+  currentIdx < allProjects.length - 1 ? allProjects[currentIdx + 1] : null;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: title,
+  abstract: summary,
+  url: pageUrl,
+  ...(cover && { image: new URL(cover, Astro.site).href }),
+  about: tag,
+  creator: { '@type': 'Organization', name: 'HeyView Studio' },
+  ...(client && { sourceOrganization: { '@type': 'Organization', name: client } }),
+  ...(year && { datePublished: String(year) }),
+};
+---
+
+<Layout title={`${title} — HeyView`} description={summary} image={cover} type="article">
+  <div class="max-w-360 mx-auto relative shadow-sm">
+    <Navbar transition:persist />
+
+    <main id="main-content">
+      <article>
+
+        <!-- ── Hero (navy) ──────────────────────────────────────────────── -->
+        <section class="grain bg-navy">
+          <div class="px-5 md:px-16 pt-20 pb-16">
+
+            <a
+              href={workIndexHref}
+              class="inline-flex items-center gap-2 font-sans text-[12px] font-semibold tracking-widest uppercase transition-colors duration-200"
+              style="color: rgba(245,240,232,0.4);"
+              onmouseover="this.style.color='rgba(245,240,232,0.75)'"
+              onmouseout="this.style.color='rgba(245,240,232,0.4)'"
+            >
+              <span
+                class="material-symbols-outlined"
+                style="font-size:14px; font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20;"
+              >arrow_back</span>
+              {t.allWork}
+            </a>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mt-12 items-start">
+
+              <!-- Left col: categories + headline + summary -->
+              <div class="md:col-span-8">
+                <div class="flex flex-wrap items-center gap-3 mb-8">
+                  {categories.map((cat: string, i: number) => (
+                    <>
+                      {i > 0 && <span style="color: rgba(245,240,232,0.2);">•</span>}
+                      <span class="eyebrow text-accent">{cat}</span>
+                    </>
+                  ))}
+                </div>
+
+                <h1 class="font-serif text-[44px] md:text-[64px] text-cream font-light leading-[1.1] max-w-3xl">
+                  {title}
+                </h1>
+
+                <p
+                  class="font-sans text-[17px] md:text-[20px] leading-relaxed max-w-2xl mt-6"
+                  style="color: rgba(245,240,232,0.65);"
+                >
+                  {summary}
+                </p>
+              </div>
+
+              <!-- Right col: metadata grid (Client, Services, Year hidden for internal use) -->
+              {(client || metaServices) && (
+                <div
+                  class="md:col-span-4 mt-10 md:mt-0 pt-8 md:pt-16 space-y-8 border-t md:border-t-0 md:border-l md:pl-12"
+                  style="border-color: rgba(245,240,232,0.1);"
+                >
+                  {client && (
+                    <div>
+                      <span class="eyebrow text-accent block mb-2">{t.client}</span>
+                      <span class="font-sans text-[15px] text-cream">{client}</span>
+                    </div>
+                  )}
+                  {metaServices && (
+                    <div>
+                      <span class="eyebrow text-accent block mb-2">{t.services}</span>
+                      <span class="font-sans text-[15px] text-cream">{metaServices}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <!-- Year kept in metadata for SEO/schema, hidden from view for now -->
+              {year && <meta property="datePublished" content={String(year)} />}
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Cover image (full-bleed) ────────────────────────────────── -->
+        {cover ? (
+          <section class="w-full h-[55vh] md:h-[80vh] overflow-hidden">
+            <img
+              src={cover}
+              alt={title}
+              class="w-full h-full object-cover"
+              loading="eager"
+              transition:name={`cover-${project.id}`}
+            />
+          </section>
+        ) : (
+          <div
+            class="h-56 md:h-80 w-full flex items-center justify-center"
+            style="background: linear-gradient(135deg, #2a3848 0%, #1a242f 100%);"
+          >
+            <span
+              class="material-symbols-outlined"
+              style="font-size:88px; color: rgba(245,240,232,0.15);"
+            >monitoring</span>
+          </div>
+        )}
+
+        <!-- ── Body (custom story → structured sections → prose fallback) ── -->
+        {CustomStory ? (
+          <CustomStory />
+        ) : (context || solution) ? (
+          <CaseStudyStory context={context} solution={solution} />
+        ) : (
+          <div class="bg-cream px-5 md:px-16 py-16 md:py-24">
+            <div class="prose-light font-sans text-[17px] leading-relaxed max-w-2xl">
+              <Content />
+            </div>
+          </div>
+        )}
+
+        <!-- ── Gallery with Lightbox ──────────────────────────────────── -->
+        {gallery && gallery.length > 0 && (
+          <Gallery images={gallery} />
+        )}
+
+        <!-- ── Stats / Results ──────────────────────────────────────────── -->
+        {stats && stats.length > 0 && (
+          <section class="bg-navy py-24 md:py-32">
+            <div class="px-5 md:px-16 grid grid-cols-1 md:grid-cols-12 gap-6">
+              <div class="md:col-span-5">
+                <h2 class="font-serif text-[40px] text-cream font-normal leading-tight mb-6">
+                  {t.resultsHeadline}
+                </h2>
+                <p
+                  class="font-sans text-[17px] leading-relaxed"
+                  style="color: rgba(245,240,232,0.65);"
+                >
+                  {results?.intro ?? t.resultsDefaultIntro}
+                </p>
+              </div>
+
+              <div class="md:col-span-6 md:col-start-7 mt-12 md:mt-0 grid grid-cols-2 gap-x-10 gap-y-14">
+                {stats.map((stat: { value: string; label: string }) => {
+                  const numMatch = stat.value.match(/\d+(?:\.\d+)?/);
+                  const numValue = numMatch ? parseFloat(numMatch[0]) : 0;
+                  const suffix = stat.value.replace(numMatch ? numMatch[0] : '', '');
+                  const isDecimal = numValue !== Math.floor(numValue);
+
+                  return (
+                    <div
+                      class="py-4 pl-8"
+                      style="border-left: 0.5px solid rgba(168,124,82,0.55);"
+                    >
+                      <span
+                        class="font-serif text-[52px] md:text-[64px] block text-accent leading-none mb-3 select-none"
+                        data-count={Math.floor(numValue)}
+                        data-suffix={suffix}
+                        data-decimal={isDecimal ? '1' : '0'}
+                        style="cursor: default;"
+                      >
+                        {stat.value}
+                      </span>
+                      <span
+                        class="eyebrow uppercase tracking-widest"
+                        style="color: rgba(245,240,232,0.6);"
+                      >
+                        {stat.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <!-- ── Testimonial ─────────────────────────────────────────────── -->
+        {testimonial && (
+          <section class="bg-surface" style="border-top: 0.5px solid #E7E1D6;">
+            <div class="max-w-360 mx-auto px-5 md:px-16 py-20 md:py-28 flex flex-col items-center text-center">
+              <span class="eyebrow mb-8" style="color: #A67C52;">{t.inTheirWords}</span>
+              <span
+                class="font-serif text-[56px] md:text-[72px] leading-none select-none mb-4"
+                style="color: #A67C52; line-height: 0.6;"
+                aria-hidden="true"
+              >&ldquo;</span>
+              <blockquote class="font-serif italic text-[22px] md:text-[30px] text-primary font-normal leading-snug max-w-2xl mt-6">
+                {testimonial.quote}
+              </blockquote>
+              <div class="mt-10 mb-4 w-8" style="border-top: 0.5px solid #E7E1D6;"></div>
+              <p class="eyebrow text-primary mb-2">{testimonial.author}</p>
+              <p class="font-sans text-[13px] text-secondary">{testimonial.role}</p>
+            </div>
+          </section>
+        )}
+
+      </article>
+
+      <!-- ── Prev / Next ────────────────────────────────────────────────── -->
+      {(prevProject || nextProject) && (
+        <nav
+          class="bg-navy grid"
+          style={`grid-template-columns: ${prevProject && nextProject ? '1fr 1fr' : '1fr'}; border-top: 0.5px solid rgba(245,240,232,0.1);`}
+        >
+          {prevProject && (
+            <a
+              href={getRelativeLocaleUrl('es', `/work/${workSlug(prevProject.id)}`)}
+              class="group py-14 px-8 md:px-16 flex flex-col gap-3"
+              style={nextProject ? 'border-right: 0.5px solid rgba(245,240,232,0.1);' : ''}
+            >
+              <span
+                class="eyebrow flex items-center gap-2"
+                style="color: rgba(245,240,232,0.45);"
+              >
+                <span
+                  class="material-symbols-outlined"
+                  style="font-size:14px; font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20;"
+                >arrow_back</span>
+                {t.previousProject}
+              </span>
+              <span class="font-serif text-[22px] md:text-[26px] text-cream leading-tight group-hover:text-accent transition-colors duration-200">
+                {prevProject.data.title}
+              </span>
+            </a>
+          )}
+          {nextProject && (
+            <a
+              href={getRelativeLocaleUrl('es', `/work/${workSlug(nextProject.id)}`)}
+              class="group py-14 px-8 md:px-16 flex flex-col gap-3 items-end text-right"
+            >
+              <span
+                class="eyebrow flex items-center gap-2"
+                style="color: rgba(245,240,232,0.45);"
+              >
+                {t.nextProject}
+                <span
+                  class="material-symbols-outlined"
+                  style="font-size:14px; font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20;"
+                >arrow_forward</span>
+              </span>
+              <span class="font-serif text-[22px] md:text-[26px] text-cream leading-tight group-hover:text-accent transition-colors duration-200">
+                {nextProject.data.title}
+              </span>
+            </a>
+          )}
+        </nav>
+      )}
+
+    </main>
+
+    <Footer />
+  </div>
+
+  <script is:inline>
+    const statCounters = document.querySelectorAll('[data-count][data-suffix]');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const target = parseInt(el.dataset.count ?? '0', 10);
+        const suffix = el.dataset.suffix ?? '';
+        const isDecimal = el.dataset.decimal === '1';
+        const duration = 1200;
+        const start = performance.now();
+        const tick = (now) => {
+          const progress = Math.min((now - start) / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          const current = ease * target;
+          const formatted = isDecimal ? current.toFixed(1) : Math.round(current).toString();
+          el.textContent = formatted + suffix;
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        observer.unobserve(el);
+      });
+    }, { threshold: 0.4 });
+
+    statCounters.forEach(el => observer.observe(el));
+  </script>
+
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />
+</Layout>

@@ -199,7 +199,45 @@ and I'll scaffold it.
 
 ---
 
-## 6. Day-0 checklist
+## 6. Bilingual (EN/ES) routing
+
+The site is bilingual: English at the root (`/`, `/services`, …) and Spanish
+under `/es/` (`/es/`, `/es/services`, …), using Astro's built-in `i18n`
+routing (`astro.config.mjs` → `i18n`, `defaultLocale: 'en'`,
+`prefixDefaultLocale: false`). English URLs are unchanged from before i18n
+shipped — no redirects needed, no lost SEO equity.
+
+**Conventions:**
+
+- **Copy** lives in a central dictionary, not inline in components:
+  `src/i18n/en.ts` / `src/i18n/es.ts`, one key per page/component. Read it via
+  `useTranslations(Astro.currentLocale)` from `src/i18n/utils.ts`. `es.ts` is
+  typed `satisfies typeof en` so a missing translation key is a build-time
+  TypeScript error, not a silent English fallback in production.
+- **Routing helpers** (`src/i18n/utils.ts`): `getRelativeLocaleUrl` (re-exported
+  from `astro:i18n`) for internal links that should follow the current locale;
+  `getAlternateUrls` computes the EN/ES/x-default hreflang URLs for a given
+  path; `getSwitcherUrl` computes where the navbar's language toggle should
+  point, falling back to that locale's homepage if the current page has no
+  translation yet (tracked in the `translatedPaths` set in that file).
+- **hreflang**: every page emits reciprocal `<link rel="alternate">` tags
+  (`en`, `es`, `x-default`) in `Layout.astro`, and the sitemap integration is
+  configured with matching `i18n.locales` so `sitemap-index.xml` carries the
+  same signal.
+- **Coverage today**: homepage and `/services` are fully translated (Phase 2).
+  `/work`, `/health`, and `/privacy-policy` are English-only for now — see
+  `translatedPaths` in `src/i18n/utils.ts` to extend coverage as those ship.
+  The `work` content collection has no `lang` field yet; adding bilingual case
+  studies requires a schema change (locale-suffixed filenames + custom
+  `getStaticPaths`), not just dictionary entries.
+- **Translation quality**: Spanish copy in `es.ts` was Claude-drafted (neutral
+  Latin American / `es-419`) and should get a native-speaker review pass
+  before being treated as final, especially anything customer-facing on the
+  legal/privacy side once that page is translated.
+
+---
+
+## 7. Day-0 checklist
 
 ```
 Already done (in the repo):

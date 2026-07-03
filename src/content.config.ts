@@ -3,10 +3,20 @@ import { defineCollection } from 'astro:content';
 import { z } from 'zod';
 
 // Portfolio / case studies. One Markdown file per project in src/content/work/.
-// The filename (sans .md) becomes the URL slug at /work/<slug>.
+// Filenames carry a locale suffix (e.g. `coolbrand.en.md` / `coolbrand.es.md`)
+// so both translations share the same URL slug — see `workSlug` below.
 const work = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/work' }),
+  // Default id generation slugifies filenames and strips dots (turning
+  // `coolbrand.es.md` into `coolbrandes`), which collides with the
+  // `workSlug` scheme below — so ids are the raw filename (sans `.md`).
+  loader: glob({
+    pattern: '**/*.md',
+    base: './src/content/work',
+    generateId: ({ entry }) => entry.replace(/\.md$/, ''),
+  }),
   schema: z.object({
+    /** Locale this entry is written in — matches the filename suffix. */
+    lang: z.enum(['en', 'es']).default('en'),
     title: z.string(),
     /** Two-part eyebrow label, e.g. "LUXURY RETAIL   WEB DESIGN". */
     tag: z.string(),
@@ -61,3 +71,10 @@ const work = defineCollection({
 });
 
 export const collections = { work };
+
+/** Work collection ids are `<slug>.<lang>` (e.g. `coolbrand.es`) since the
+ *  loader derives ids from filenames. Strip the suffix to get the URL slug
+ *  shared across both locale versions of a case study. */
+export function workSlug(id: string): string {
+  return id.replace(/\.(en|es)$/, '');
+}

@@ -1,26 +1,9 @@
 ---
-const services = [
-  {
-    number: "01",
-    title: "Document & process automation",
-    body: "If three people and two days go into a document that runs your business, that’s not a process. That’s a problem with a routine. We automate the manual workflows that quietly slow a business.",
-  },
-  {
-    number: "02",
-    title: "Customer communication & AI assistants",
-    body: "Your customers write at 9 PM on WhatsApp, Instagram, and email — and they buy from whoever answers first. We build AI assistants that respond instantly, book the appointment, and win back the ones who went quiet.",
-  },
-  {
-    number: "03",
-    title: "Operations dashboards",
-    body: "Reports tell you what happened. We build dashboards that tell you what to do next — designed for the person making the decision, not the person exporting the CSV.",
-  },
-  {
-    number: "04",
-    title: "Custom systems & integrations",
-    body: "We don’t sell platforms and we won’t make you replace anything. We build the layer on top: connecting the software you already pay for so it works as one system.",
-  },
-];
+import { useTranslations, getRelativeLocaleUrl } from '../i18n/utils';
+
+const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
+const t = useTranslations(locale).whatWeDo;
+const servicesHref = getRelativeLocaleUrl(locale, '/services');
 ---
 
 <section id="services" class="text-cream px-5 md:px-16 py-24"
@@ -31,14 +14,14 @@ const services = [
     <!-- Left: headline -->
     <div>
       <h2 class="font-serif text-[32px] md:text-[40px] text-cream leading-[1.15] font-normal">
-        Most systems are built to impress on a demo. We build them to work on a Tuesday morning.
+        {t.headline}
       </h2>
     </div>
 
     <!-- Right: service cards -->
     <div class="bg-navy-card p-10 md:p-12">
       <div class="flex flex-col gap-10">
-        {services.map((service, i) => (
+        {t.services.map((service, i) => (
           <>
             <div class="flex flex-col gap-3">
               <span class="font-serif text-[48px] font-light leading-none text-accent">{service.number}</span>
@@ -49,7 +32,7 @@ const services = [
                 {service.body}
               </p>
             </div>
-            {i < services.length - 1 && (
+            {i < t.services.length - 1 && (
               <div class="w-full h-px bg-cream/10"></div>
             )}
           </>
@@ -61,10 +44,10 @@ const services = [
 
   <div class="max-w-[1280px] mx-auto mt-12 flex justify-end">
     <a
-      href="/services"
+      href={servicesHref}
       class="font-sans text-[13px] text-cream/60 hover:text-cream transition-colors duration-200 underline underline-offset-4"
     >
-      See all services →
+      {t.seeAll}
     </a>
   </div>
 

@@ -1,23 +1,22 @@
 ---
 import { CAL_LINK, CAL_NAMESPACE, CAL_CONFIG } from '../config';
+import { useTranslations } from '../i18n/utils';
 
-const stats = [
-  { value: 22, suffix: '',  label: 'Years in enterprise systems' },
-  { value: 4,  suffix: '',   label: 'Stages. Fixed quote.' },
-  { value: 100, suffix: '%', label: 'USA & Costa Rica · CR-based' },
-];
+const dict = useTranslations(Astro.currentLocale);
+const t = dict.contactCTA;
+const stats = t.stats;
 ---
 
 <section id="contact" class="bg-cream px-5 md:px-16 py-24 flex flex-col items-start" style="border-bottom: 0.5px solid #E7E1D6;">
 
-  <span class="eyebrow text-navy/60 block mb-6">Let's work together</span>
+  <span class="eyebrow text-navy/60 block mb-6">{t.eyebrow}</span>
 
   <h2 class="font-serif text-[32px] md:text-[48px] text-navy max-w-2xl mb-8 leading-tight">
-    Your firm deserves systems that actually work.
+    {t.headline}
   </h2>
 
   <p class="font-sans text-[17px] leading-relaxed max-w-xl mb-10" style="color: rgba(30, 42, 56, 0.8);">
-    We take on 2–3 new clients per quarter. If the fit is right, we move fast.
+    {t.subhead}
   </p>
 
   <div class="flex flex-col gap-6 items-start">
@@ -27,7 +26,7 @@ const stats = [
       data-cal-config={CAL_CONFIG}
       class="bg-navy text-cream px-8 py-4 font-sans text-[13px] font-medium tracking-wide hover:opacity-90 transition-opacity uppercase cursor-pointer"
     >
-      Book a discovery call
+      {dict.common.bookDiscoveryCall}
     </button>
   </div>
 

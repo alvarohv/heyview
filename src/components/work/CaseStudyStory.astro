@@ -1,4 +1,6 @@
 ---
+import { useTranslations } from '../../i18n/utils';
+
 interface Feature {
   title: string;
   body: string;
@@ -10,6 +12,7 @@ interface Props {
 }
 
 const { context, solution } = Astro.props;
+const t = useTranslations(Astro.currentLocale).workDetail;
 ---
 
 {context && (
@@ -17,7 +20,7 @@ const { context, solution } = Astro.props;
     <div class="max-w-360 mx-auto px-5 md:px-16 py-20 md:py-28 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10">
       <div class="md:col-span-4">
         <h2 class="font-serif text-[32px] md:text-[40px] text-primary font-normal leading-tight">
-          The Context
+          {t.theContext}
         </h2>
       </div>
       <div class="md:col-span-7 md:col-start-6">
@@ -36,7 +39,7 @@ const { context, solution } = Astro.props;
       <!-- Left: heading + intro -->
       <div class="md:col-span-5">
         <h2 class="font-serif text-[32px] md:text-[40px] text-cream font-normal leading-tight mb-6">
-          The Solution
+          {t.theSolution}
         </h2>
         <p class="font-sans text-[17px] md:text-[20px] leading-relaxed" style="color: rgba(245,240,232,0.65);">
           {solution.intro}

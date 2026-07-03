@@ -1,14 +1,28 @@
 ---
 import { CAL_LINK, CAL_NAMESPACE, CAL_CONFIG } from '../config';
+import { useTranslations, getRelativeLocaleUrl, getSwitcherUrl } from '../i18n/utils';
+
+const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
+const t = useTranslations(locale);
 
 // Root-relative anchors so the nav works from any page (e.g. /work/<slug>),
-// not just the homepage.
+// not just the homepage. `localized: false` routes don't have a Spanish
+// version yet (see src/i18n/utils.ts) and always point at the English page.
 const links = [
-  { label: 'Services', href: '/services' },
-  { label: 'Work',     href: '/work' },
-  { label: 'About',    href: '/#about' },
-  { label: 'Contact',  href: '/#contact' },
-];
+  { label: t.nav.services, href: '/services',   localized: true },
+  { label: t.nav.work,     href: '/work',       localized: true },
+  { label: t.nav.about,    href: '/#about',     localized: true },
+  { label: t.nav.contact,  href: '/#contact',   localized: true },
+].map((link) => ({
+  ...link,
+  href: link.localized ? getRelativeLocaleUrl(locale, link.href) : link.href,
+}));
+
+// Segmented EN/ES toggle: the active locale links to the current page,
+// the inactive one goes through getSwitcherUrl's translated-page fallback.
+const currentPath = Astro.url.pathname;
+const enHref = locale === 'en' ? currentPath : getSwitcherUrl(currentPath, 'en');
+const esHref = locale === 'es' ? currentPath : getSwitcherUrl(currentPath, 'es');
 ---
 
 <!-- Mobile drawer -->
@@ -36,14 +50,35 @@ const links = [
     ))}
   </div>
 
-  <div class="px-5 pb-8">
+  <div class="px-5 pb-8 flex flex-col gap-4">
+    <div class="self-start flex items-center" style="border: 0.5px solid var(--color-cream-border);">
+      <a
+        href={enHref}
+        aria-current={locale === 'en' ? 'page' : undefined}
+        aria-label="Switch to English"
+        class:list={[
+          'px-3 py-1.5 font-sans text-[11px] font-medium tracking-wide transition-colors',
+          locale === 'en' ? 'bg-navy text-cream' : 'text-muted hover:text-navy',
+        ]}
+        style="border-right: 0.5px solid var(--color-cream-border);"
+      >EN</a>
+      <a
+        href={esHref}
+        aria-current={locale === 'es' ? 'page' : undefined}
+        aria-label="Cambiar a español"
+        class:list={[
+          'px-3 py-1.5 font-sans text-[11px] font-medium tracking-wide transition-colors',
+          locale === 'es' ? 'bg-navy text-cream' : 'text-muted hover:text-navy',
+        ]}
+      >ES</a>
+    </div>
     <button
       data-cal-link={CAL_LINK}
       data-cal-namespace={CAL_NAMESPACE}
       data-cal-config={CAL_CONFIG}
       class="block w-full bg-navy text-cream text-center px-6 py-3.5 font-sans text-[13px] font-medium tracking-wide hover:opacity-90 transition-opacity cursor-pointer"
     >
-      Book a call
+      {t.common.bookACall}
     </button>
   </div>
 </nav>
@@ -79,13 +114,37 @@ const links = [
     ))}
   </nav>
 
-  <button
-    data-cal-link={CAL_LINK}
-    data-cal-config={CAL_CONFIG}
-    class="hidden md:inline-flex items-center bg-navy text-cream px-6 py-3 font-sans text-[13px] font-medium hover:opacity-90 transition-opacity cursor-pointer"
-  >
-    Book a call
-  </button>
+  <div class="hidden md:flex items-center gap-4">
+    <div class="flex items-center" style="border: 0.5px solid var(--color-cream-border);">
+      <a
+        href={enHref}
+        aria-current={locale === 'en' ? 'page' : undefined}
+        aria-label="Switch to English"
+        class:list={[
+          'px-3 py-1.5 font-sans text-[11px] font-medium tracking-wide transition-colors',
+          locale === 'en' ? 'bg-navy text-cream' : 'text-muted hover:text-navy',
+        ]}
+        style="border-right: 0.5px solid var(--color-cream-border);"
+      >EN</a>
+      <a
+        href={esHref}
+        aria-current={locale === 'es' ? 'page' : undefined}
+        aria-label="Cambiar a español"
+        class:list={[
+          'px-3 py-1.5 font-sans text-[11px] font-medium tracking-wide transition-colors',
+          locale === 'es' ? 'bg-navy text-cream' : 'text-muted hover:text-navy',
+        ]}
+      >ES</a>
+    </div>
+
+    <button
+      data-cal-link={CAL_LINK}
+      data-cal-config={CAL_CONFIG}
+      class="inline-flex items-center bg-navy text-cream px-6 py-3 font-sans text-[13px] font-medium hover:opacity-90 transition-opacity cursor-pointer"
+    >
+      {t.common.bookACall}
+    </button>
+  </div>
 </header>
 
 <script>

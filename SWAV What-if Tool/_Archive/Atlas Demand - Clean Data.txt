@@ -1,0 +1,164 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════
+ *  Atlas Demand Cleaner — Office Script (v8)
+ *  SWAV What-If Tool
+ * ═══════════════════════════════════════════════════════════════════════
+ *
+ *  Creates ONE tab:
+ *    1. 'Atlas Demand' — filtered data for copy-paste to SWAV
+ *
+ *  v8 vs v7:
+ *    - Tab renamed: "Atlas  Demand" (2 spaces) → "Atlas Demand" (1 space)
+ *    - Demand Summary tab and chart removed
+ * ═══════════════════════════════════════════════════════════════════════
+ */
+
+function main(workbook: ExcelScript.Workbook): void {
+    const SOURCE_SHEET   = "View";
+    const DATA_SHEET     = "Atlas Demand";
+    const OPINION_VALUE  = "Total Dmd";
+    const SERIES_PREFIX  = "FG";
+    const HEADER_ROW     = 1;
+    const DATA_START_ROW = 2;
+    const CHUNK_SIZE     = 500;
+
+    const KEEP_NAMED_COLS: string[] = ["SeriesID", "Description", "Product Sub Group"];
+
+    // ─── STEP 1: VALIDATE SOURCE ─────────────────────────────────────
+    const srcSheet = workbook.getWorksheet(SOURCE_SHEET);
+    if (!srcSheet) { console.log(`ERROR: Sheet '${SOURCE_SHEET}' not found.`); return; }
+    const usedRange = srcSheet.getUsedRange();
+    if (!usedRange) { console.log("ERROR: View sheet is empty."); return; }
+
+    const totalRows = usedRange.getRowCount();
+    const totalCols = usedRange.getColumnCount();
+    console.log(`Step 1: Source is ${totalRows} rows × ${totalCols} cols`);
+
+    // ─── STEP 2: READ HEADER ─────────────────────────────────────────
+    console.log("Step 2: Reading header...");
+    const headerValues = srcSheet.getRangeByIndexes(HEADER_ROW, 0, 1, totalCols).getValues()[0];
+    const headerIndex  = new Map<string, number>();
+    for (let ci = 0; ci < totalCols; ci++) {
+        const name = String(headerValues[ci] ?? "").trim();
+        if (name) headerIndex.set(name, ci);
+    }
+
+    // ─── STEP 3: MAP COLUMNS ─────────────────────────────────────────
+    console.log("Step 3: Mapping columns...");
+    const keepColIndices: number[] = [];
+    const keepColNames: string[]   = [];
+
+    // Batch logs — avoid console.log inside loop
+    const colLogs: string[] = [];
+    for (const colName of KEEP_NAMED_COLS) {
+        const idx = headerIndex.get(colName);
+        if (idx !== undefined) {
+            keepColIndices.push(idx);
+            keepColNames.push(colName);
+            colLogs.push(`  ✓ ${colName} → col ${idx}`);
+        } else {
+            colLogs.push(`  ✗ ${colName} — not found`);
+        }
+    }
+    console.log(colLogs.join("\n"));
+
+    // Calculate start of current week (Monday)
+    const today     = new Date();
+    const dayOfWeek = today.getDay(); // 0=Sun … 6=Sat
+    const daysToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() + daysToMon);
+    weekStart.setHours(0, 0, 0, 0);
+    console.log(`  ✓ Including dates from: ${weekStart.toLocaleDateString("en-US")} onwards`);
+
+    const datePattern = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+    const namedCount  = keepColIndices.length;
+    const monthNames  = ["Jan","Feb","Mar","Apr","May","Jun",
+                         "Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    // Parallel arrays instead of Map<number,string> — avoids downlevelIteration error
+    let dateCount = 0;
+
+    for (let ci = 0; ci < totalCols; ci++) {
+        const name = String(headerValues[ci] ?? "").trim();
+        if (datePattern.test(name)) {
+            const parts   = name.split("/");
+            const colDate = new Date(
+                parseInt(parts[2], 10),
+                parseInt(parts[0], 10) - 1,
+                parseInt(parts[1], 10)
+            );
+            if (colDate < weekStart) continue; // skip past weeks
+
+            keepColIndices.push(ci);
+            keepColNames.push(name);
+            dateCount++;
+        }
+    }
+    console.log(`  ✓ ${dateCount} date columns (current week onwards)`);
+
+    const seriesCol  = headerIndex.get("SeriesID") ?? -1;
+    const opinionCol = headerIndex.get("Opinion")  ?? -1;
+    if (seriesCol < 0 || opinionCol < 0) { console.log("ERROR: SeriesID/Opinion not found."); return; }
+
+    // ─── STEP 4+5: CHUNKED SCAN + COLLECT ────────────────────────────
+    // Note: getValues() inside a loop triggers warning [139] — unavoidable
+    // for datasets too large for a single bulk read (108K+ rows).
+    console.log("Step 4+5: Scanning and collecting data...");
+
+    const minCol  = Math.min(...keepColIndices, seriesCol, opinionCol);
+    const maxCol  = Math.max(...keepColIndices, seriesCol, opinionCol);
+    const colSpan = maxCol - minCol + 1;
+
+    const seriesOffset  = seriesCol  - minCol;
+    const opinionOffset = opinionCol - minCol;
+    const keepOffsets   = keepColIndices.map(ci => ci - minCol);
+
+    const outRows: (string | number | boolean)[][] = [];
+    const dataRowCount = totalRows - DATA_START_ROW;
+
+    for (let chunk = 0; chunk < Math.ceil(dataRowCount / CHUNK_SIZE); chunk++) {
+        const startRow   = DATA_START_ROW + chunk * CHUNK_SIZE;
+        const rowsToRead = Math.min(CHUNK_SIZE, totalRows - startRow);
+        if (rowsToRead <= 0) break;
+
+        const chunkData = srcSheet
+            .getRangeByIndexes(startRow, minCol, rowsToRead, colSpan)
+            .getValues();
+
+        for (let ri = 0; ri < chunkData.length; ri++) {
+            const series  = String(chunkData[ri][seriesOffset]  ?? "").trim();
+            const opinion = String(chunkData[ri][opinionOffset] ?? "").trim();
+            if (opinion === OPINION_VALUE && series.startsWith(SERIES_PREFIX)) {
+                outRows.push(keepOffsets.map(off => chunkData[ri][off] ?? ""));
+            }
+        }
+    }
+    console.log(`  ${outRows.length} matching rows`);
+    if (outRows.length === 0) { console.log("WARNING: No rows matched."); return; }
+
+    // ─── STEP 6: WRITE DATA TAB ──────────────────────────────────────
+    console.log("Step 6: Writing data tab...");
+    let existingData = workbook.getWorksheet(DATA_SHEET);
+    if (existingData) existingData.delete();
+    const dataSheet   = workbook.addWorksheet(DATA_SHEET);
+    const outColCount = keepColIndices.length;
+
+    // Format header as text to prevent date-serial conversion
+    const headerRange = dataSheet.getRangeByIndexes(0, 0, 1, outColCount);
+    headerRange.setNumberFormatLocal("@");
+    headerRange.setValues([keepColNames]);
+
+    if (outRows.length > 0) {
+        dataSheet.getRangeByIndexes(1, 0, outRows.length, outColCount).setValues(outRows);
+    }
+
+    headerRange.getFormat().getFont().setBold(true);
+    headerRange.getFormat().getFill().setColor("#4472C4");
+    headerRange.getFormat().getFont().setColor("#FFFFFF");
+    dataSheet.getRangeByIndexes(0, 0, outRows.length + 1, namedCount).getFormat().autofitColumns();
+
+    console.log("═══════════════════════════════════════════════════");
+    console.log(`  '${DATA_SHEET}': ${outRows.length} rows × ${outColCount} cols`);
+    console.log("═══════════════════════════════════════════════════");
+}

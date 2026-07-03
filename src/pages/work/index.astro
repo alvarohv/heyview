@@ -4,10 +4,14 @@ import Layout from '../../layouts/Layout.astro';
 import Navbar from '../../components/Navbar.astro';
 import Footer from '../../components/Footer.astro';
 import { CAL_LINK, CAL_NAMESPACE, CAL_CONFIG } from '../../config';
+import { workSlug } from '../../content.config';
+import { useTranslations } from '../../i18n/utils';
 
-const projects = (await getCollection('work', ({ data }) => !data.draft)).sort(
-  (a, b) => a.data.order - b.data.order,
-);
+const t = useTranslations('en').workPage;
+
+const projects = (
+  await getCollection('work', ({ data }) => !data.draft && data.lang === 'en')
+).sort((a, b) => a.data.order - b.data.order);
 
 const featured = projects.find((p) => p.data.featured) ?? projects[0];
 const rest = projects.filter((p) => p.id !== featured?.id);
@@ -22,8 +26,8 @@ function splitTag(tag: string): [string, string] {
 ---
 
 <Layout
-  title="Work — HeyView"
-  description="Selected work from HeyView — design, automation, and AI systems for complex operations."
+  title={t.title}
+  description={t.description}
 >
   <div class="max-w-360 mx-auto relative shadow-sm">
     <Navbar transition:persist />
@@ -32,17 +36,17 @@ function splitTag(tag: string): [string, string] {
 
       <!-- ── Hero ── -->
       <section class="grain bg-navy px-5 md:px-16 pt-20 pb-14">
-        <span class="eyebrow text-accent block mb-5">Selected Work</span>
+        <span class="eyebrow text-accent block mb-5">{t.eyebrow}</span>
         <h1 class="font-serif text-[48px] md:text-[64px] text-cream font-light leading-tight mb-5">
-          The work.
+          {t.headline}
         </h1>
         <p class="font-sans text-[17px] leading-relaxed max-w-2xl" style="color: rgba(245,240,232,0.65);">
-          A growing record of systems and design built for businesses that mean business.
+          {t.subhead}
         </p>
 
         <!-- Filter pills -->
         <nav aria-label="Filter projects by category" class="flex flex-wrap gap-3 mt-12">
-          {(['All', 'Web', 'Branding', 'AI Systems', 'Dashboard'] as const).map((label, i) => (
+          {t.filters.map((label, i) => (
             <button
               data-filter={label.toLowerCase()}
               class:list={['filter-btn', i === 0 && 'is-active']}
@@ -56,7 +60,7 @@ function splitTag(tag: string): [string, string] {
       <!-- ── Featured Project ── -->
       {featured && (() => {
         const { title, summary, tag, cover, confidential } = featured.data;
-        const href = confidential ? '#contact' : `/work/${featured.id}`;
+        const href = confidential ? '#contact' : `/work/${workSlug(featured.id)}`;
         return (
           <section data-filter-card data-tags={tag.toLowerCase()} class="group relative px-5 md:px-16 py-20 flex flex-col md:flex-row gap-12 md:gap-16 items-center bg-cream">
             <a href={href} class="absolute inset-0 z-10" aria-label={title}></a>
@@ -75,14 +79,14 @@ function splitTag(tag: string): [string, string] {
               ) : (
                 <div class="w-full h-full flex items-center justify-center"
                   style="background: linear-gradient(135deg, #ddd7cd 0%, #ccc6bc 100%);">
-                  <span class="eyebrow text-navy/25">[Project preview]</span>
+                  <span class="eyebrow text-navy/25">{t.projectPreview}</span>
                 </div>
               )}
             </div>
 
             <!-- Text -->
             <div class="w-full md:w-[40%] flex flex-col gap-5 relative z-20">
-              <span class="eyebrow text-accent">Featured Project</span>
+              <span class="eyebrow text-accent">{t.featuredLabel}</span>
               <h2 class="font-serif text-[32px] md:text-[40px] text-navy font-normal leading-tight">
                 {title}
               </h2>
@@ -94,7 +98,7 @@ function splitTag(tag: string): [string, string] {
                   class="inline-flex items-center gap-2 font-sans text-[13px] font-semibold tracking-widest uppercase text-navy group-hover:text-accent transition-colors duration-200 relative z-20"
                 >
                   <span class="underline-offset-4 group-hover:underline">
-                    {confidential ? 'Request case study' : 'View case study'}
+                    {confidential ? t.requestCaseStudy : t.viewCaseStudy}
                   </span>
                   <span
                     class="material-symbols-outlined translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300"
@@ -117,7 +121,7 @@ function splitTag(tag: string): [string, string] {
 
           {rest.map((project) => {
             const { title, summary, tag, cover, confidential } = project.data;
-            const href = confidential ? '#contact' : `/work/${project.id}`;
+            const href = confidential ? '#contact' : `/work/${workSlug(project.id)}`;
             const [cat1, cat2] = splitTag(tag);
             return (
               <article data-filter-card data-tags={tag.toLowerCase()} class="group relative flex flex-col gap-6">
@@ -134,7 +138,7 @@ function splitTag(tag: string): [string, string] {
                   ) : (
                     <div class="w-full h-full flex items-center justify-center"
                       style="background: linear-gradient(135deg, #ddd7cd 0%, #ccc6bc 100%);">
-                      <span class="eyebrow text-navy/25">[Project preview]</span>
+                      <span class="eyebrow text-navy/25">{t.projectPreview}</span>
                     </div>
                   )}
                 </div>
@@ -160,7 +164,7 @@ function splitTag(tag: string): [string, string] {
                       class="inline-flex items-center gap-2 font-sans text-[12px] font-semibold tracking-widest uppercase text-navy group-hover:text-accent transition-colors duration-200 relative z-20"
                     >
                       <span class="underline-offset-4 group-hover:underline">
-                        {confidential ? 'Request case study' : 'View case study'}
+                        {confidential ? t.requestCaseStudy : t.viewCaseStudy}
                       </span>
                       <span
                         class="material-symbols-outlined translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300"
@@ -180,7 +184,7 @@ function splitTag(tag: string): [string, string] {
       <section class="grain bg-navy px-5 md:px-16 py-24 flex flex-col items-center text-center gap-10">
         <h2 class="font-serif font-light text-cream leading-tight md:whitespace-nowrap"
           style="font-size: clamp(1.75rem, 3.5vw, 2.75rem); letter-spacing: -0.01em;">
-          Ready to build your next flagship product?
+          {t.ctaHeadline}
         </h2>
         <button
           data-cal-link={CAL_LINK}
@@ -189,7 +193,7 @@ function splitTag(tag: string): [string, string] {
           class="font-sans text-[12px] font-semibold tracking-widest uppercase text-cream cursor-pointer hover:bg-cream hover:text-navy transition-colors duration-300 px-8 py-4"
           style="border: 0.5px solid rgba(245,240,232,0.5);"
         >
-          Start a conversation
+          {t.ctaButton}
         </button>
       </section>
 

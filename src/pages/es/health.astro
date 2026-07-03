@@ -1,0 +1,210 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+import { CAL_LINK, CAL_NAMESPACE, CAL_CONFIG } from '../../config';
+import { useTranslations, getRelativeLocaleUrl } from '../../i18n/utils';
+
+const t = useTranslations('es').healthPage;
+const workHref = getRelativeLocaleUrl('es', '/work');
+---
+
+<Layout
+  title={t.title}
+  description={t.description}
+>
+  <div class="max-w-360 mx-auto relative shadow-sm">
+    <Navbar transition:persist />
+    <main>
+
+      <!-- 1. Hero -->
+      <section class="grain bg-cream px-5 md:px-16 py-24 md:py-32" style="border-bottom: 0.5px solid #E7E1D6;">
+        <div class="max-w-[1280px] mx-auto">
+          <span class="eyebrow text-navy/60 block mb-8">{t.hero.eyebrow}</span>
+          <h1 class="font-serif text-[40px] md:text-[64px] text-navy font-light leading-[1.1] max-w-3xl mb-8">
+            {t.hero.h1}
+          </h1>
+          <p class="font-sans text-[17px] md:text-[20px] text-secondary leading-relaxed max-w-2xl mb-12">
+            {t.hero.body}
+          </p>
+          <button
+            data-cal-link={CAL_LINK}
+            data-cal-namespace={CAL_NAMESPACE}
+            data-cal-config={CAL_CONFIG}
+            class="bg-navy text-cream px-8 py-4 font-sans text-[13px] font-medium tracking-wide hover:opacity-90 transition-opacity uppercase cursor-pointer"
+          >
+            {t.hero.cta}
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. The pain -->
+      <section class="px-5 md:px-16 py-20 md:py-24 bg-[#F9F5EE]" style="border-bottom: 0.5px solid #E7E1D6;">
+        <div class="max-w-[1280px] mx-auto">
+          <h2 class="font-serif text-[28px] md:text-[36px] text-navy font-normal leading-[1.2] mb-6 max-w-2xl">
+            {t.pain.h2}
+          </h2>
+          <p class="font-sans text-[15px] md:text-[17px] text-secondary leading-relaxed max-w-2xl mb-12">
+            {t.pain.body}
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {t.pain.points.map((point) => (
+              <div class="flex gap-4 items-start">
+                <span class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-accent mt-2"></span>
+                <p class="font-sans text-[15px] text-secondary leading-relaxed">{point}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. The system -->
+      <section class="px-5 md:px-16 py-20 md:py-24 bg-cream" style="border-bottom: 0.5px solid #E7E1D6;">
+        <div class="max-w-[1280px] mx-auto">
+          <h2 class="font-serif text-[28px] md:text-[36px] text-navy font-normal leading-[1.2] mb-4">
+            {t.system.h2}
+          </h2>
+          <p class="font-sans text-[15px] md:text-[17px] text-secondary leading-relaxed max-w-2xl mb-16">
+            {t.system.body}
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-1 gap-12 md:gap-16">
+            {t.system.pillars.map((pillar) => (
+              <div class="flex flex-col gap-3">
+                <h3 class="font-serif text-[22px] text-navy font-medium leading-snug">
+                  {pillar.title}
+                </h3>
+                <p class="font-sans text-[15px] text-secondary leading-relaxed max-w-2xl">
+                  {pillar.body}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div class="mt-16 pt-12" style="border-top: 0.5px solid #E7E1D6;">
+            <p class="font-sans text-[15px] text-secondary leading-relaxed max-w-2xl">
+              <span class="font-medium">{t.system.addOnsLabel}</span> {t.system.addOnsBody}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Why us (pedigree) -->
+      <section class="px-5 md:px-16 py-20 md:py-24 bg-[#F9F5EE]" style="border-bottom: 0.5px solid #E7E1D6;">
+        <div class="max-w-[1280px] mx-auto">
+          <h2 class="font-serif text-[28px] md:text-[36px] text-navy font-normal leading-[1.2] mb-6 max-w-2xl">
+            {t.pedigree.h2}
+          </h2>
+          <p class="font-sans text-[15px] md:text-[17px] text-secondary leading-relaxed max-w-2xl mb-8">
+            {t.pedigree.body}
+          </p>
+          <a
+            href={workHref}
+            class="font-sans text-[13px] text-navy/60 hover:text-navy transition-colors duration-200 underline underline-offset-4"
+          >
+            {t.pedigree.linkText}
+          </a>
+        </div>
+      </section>
+
+      <!-- 5. Who this is for -->
+      <section class="px-5 md:px-16 py-20 md:py-24 bg-cream" style="border-bottom: 0.5px solid #E7E1D6;">
+        <div class="max-w-[1280px] mx-auto">
+          <h2 class="font-serif text-[28px] md:text-[36px] text-navy font-normal leading-[1.2] mb-8">
+            {t.fit.h2}
+          </h2>
+
+          <p class="font-sans text-[15px] md:text-[17px] text-secondary leading-relaxed max-w-2xl mb-12">
+            <span class="font-medium">{t.fit.specialtiesLabel}</span> {t.fit.intro}
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-0 mb-16" style="border: 0.5px solid #E7E1D6;">
+            <div class="p-10 md:p-12" style="border-right: 0.5px solid #E7E1D6; border-bottom: 0.5px solid #E7E1D6;">
+              <h3 class="font-serif text-[20px] text-navy font-medium mb-6">{t.fit.goodLabel}</h3>
+              <ul class="space-y-4">
+                {t.fit.good.map((item) => (
+                  <li class="flex gap-3 items-start">
+                    <span class="font-serif text-accent text-[18px] leading-none mt-0.5 flex-shrink-0">—</span>
+                    <span class="font-sans text-[14px] text-secondary leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div class="p-10 md:p-12 bg-[#F9F5EE]" style="border-bottom: 0.5px solid #E7E1D6;">
+              <h3 class="font-serif text-[20px] text-navy font-medium mb-6">{t.fit.notFitLabel}</h3>
+              <ul class="space-y-4">
+                {t.fit.notFit.map((item) => (
+                  <li class="flex gap-3 items-start">
+                    <span class="font-serif text-navy/30 text-[18px] leading-none mt-0.5 flex-shrink-0">—</span>
+                    <span class="font-sans text-[14px] text-secondary/70 leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. How it works -->
+      <section class="grain bg-cream px-5 md:px-16 py-20 md:py-28" style="border-bottom: 0.5px solid #E7E1D6;">
+        <div class="max-w-[1280px] mx-auto">
+          <span class="eyebrow text-navy/60 block mb-6">{t.process.eyebrow}</span>
+          <h2 class="font-serif text-[28px] md:text-[36px] text-navy font-normal mb-4 leading-[1.2]">
+            {t.process.h2}
+          </h2>
+          <p class="font-sans text-[15px] text-secondary leading-relaxed max-w-2xl mb-16">
+            {t.process.body}
+          </p>
+
+          <div class="relative">
+            <div class="absolute bg-cream-border left-[5px] top-0 bottom-0 w-px md:left-0 md:top-[5px] md:bottom-auto md:w-full md:h-px"></div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 relative z-10">
+              {t.process.stages.map((stage) => (
+                <div class="flex flex-row md:flex-col gap-6 md:gap-0">
+                  <div class="flex-shrink-0 w-3 md:w-full h-auto md:h-3 flex items-start md:items-center justify-center md:justify-start">
+                    <div class="w-[11px] h-[11px] rounded-full bg-accent ring-2 ring-cream mt-0.5 md:mt-0"></div>
+                  </div>
+                  <div class="pt-0 md:pt-10 flex-1">
+                    <span class="font-serif text-[52px] text-accent leading-none font-normal block mb-3 select-none">
+                      {stage.number}
+                    </span>
+                    <h3 class="font-serif text-[22px] text-navy font-normal mb-2">{stage.title}</h3>
+                    <p class="font-sans text-[13px] text-navy/70 leading-relaxed">{stage.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. CTA -->
+      <section class="px-5 md:px-16 py-24 md:py-32 bg-[#F9F5EE]" style="border-bottom: 0.5px solid #E7E1D6;">
+        <div class="max-w-[1280px] mx-auto">
+          <h2 class="font-serif text-[32px] md:text-[48px] text-navy font-normal leading-[1.15] mb-6 max-w-2xl">
+            {t.ctaSection.h2}
+          </h2>
+          <p class="font-sans text-[15px] md:text-[17px] text-secondary leading-relaxed max-w-2xl mb-8">
+            {t.ctaSection.body}
+          </p>
+          <div class="flex flex-col items-start gap-4">
+            <button
+              data-cal-link={CAL_LINK}
+              data-cal-namespace={CAL_NAMESPACE}
+              data-cal-config={CAL_CONFIG}
+              class="bg-navy text-cream px-8 py-4 font-sans text-[13px] font-medium tracking-wide hover:opacity-90 transition-opacity uppercase cursor-pointer"
+            >
+              {t.ctaSection.button}
+            </button>
+            <span class="font-sans text-[12px] text-navy/40">
+              {t.ctaSection.note}
+            </span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <Footer />
+  </div>
+</Layout>
