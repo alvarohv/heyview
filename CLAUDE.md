@@ -12,7 +12,7 @@ B2B agency website for HeyView, an agency focused on Automation, Design, and AI 
 ## SEO & AI discoverability
 See [SEO.md](SEO.md) for the full playbook. Key conventions:
 - Canonical domain `https://heyview.studio` — set once in `astro.config.mjs` (`site`); read via `Astro.site`.
-- `Layout.astro` handles canonical, OG/Twitter, and JSON-LD. **Every page should pass its own `title` + `description`** (format: `Phrase — HeyView`). Use `<Layout noindex>` for thin pages.
+- `Layout.astro` handles canonical, OG/Twitter, and JSON-LD. **Every page should pass its own `title` + `description`** (format: `Phrase: HeyView`). Use `<Layout noindex>` for thin pages.
 - Site identity lives in `src/config.ts` (`SITE`, `SOCIALS`); sitemap is auto-generated; `public/robots.txt` + `public/llms.txt` are AI-crawler friendly.
 - Portfolio uses **Content Collections** (`src/content/work/*.md`, schema in `src/content.config.ts`) — one indexable URL per project at `/work/<slug>`, no CMS/DB. Set `confidential: true` for teaser-only (no detail page), `featured: true` for the large card. `CaseStudies.astro` (homepage teaser) and `/work` index both read the collection via `WorkCard.astro`. See SEO.md §5.
 

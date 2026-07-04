@@ -26,14 +26,14 @@ These ship automatically — no accounts or domain activation needed.
 
 ```astro
 <Layout
-  title="Premium watch brand landing page — HeyView"
+  title="Premium watch brand landing page: HeyView"
   description="How we built an editorial, conversion-focused landing page for a luxury watch brand."
   image="/work/watch-brand-og.jpg"
   type="article"
 >
 ```
 
-Title format: `Page-specific phrase — HeyView`. Keep ≤ ~60 chars, descriptions ≤ ~155.
+Title format: `Page-specific phrase: HeyView`. Keep ≤ ~60 chars, descriptions ≤ ~155.
 
 ---
 
@@ -97,6 +97,33 @@ they crawl heavily:
 - Directory/listing on Clutch, The Manifest, or niche specialty-practice lists.
 - Anywhere you get mentioned, ensure the name is exactly **"HeyView"** and the
   one-line descriptor matches `llms.txt` (consistency = entity confidence).
+
+#### Copy kit — paste this *identically* everywhere
+LLMs cite entities they can **corroborate** across sources they already crawl
+(LinkedIn, Crunchbase, Clutch). Divergent names/descriptors lower confidence and
+cost you citations. Use these exact strings on every profile:
+
+- **Name**: HeyView  ·  **Legal**: HeyView Studio
+- **One-liner**: *Design, automation, and AI studio for specialty practices and
+  operations-heavy businesses.*
+- **Founders**: Alvaro Hernandez — AI & Systems Architect · Sinaí Alfaro —
+  Design & Product Lead
+- **Location**: Costa Rica · serves the United States & Latin America (EN/ES)
+- **Site**: https://heyview.studio  ·  **LinkedIn**: (confirmed handle — set in
+  `src/config.ts` → `SOCIALS.linkedin`)
+- **Categories/tags**: AI, Automation, Web Design, UX/UI, Software Development
+- **Longer bio** (for Crunchbase/Clutch "about"): *HeyView is a design,
+  automation, and AI studio founded in Costa Rica by Alvaro Hernandez and Sinaí
+  Alfaro. It builds document and process automation, AI customer-communication
+  assistants, operations dashboards, and custom system integrations on top of
+  the software businesses already use — fixed scope, senior hands, ~four-week
+  delivery.*
+
+**Where to create profiles (priority order):**
+1. **LinkedIn company page** — founders link their profiles to it.
+2. **Crunchbase** — org profile (one of the most-crawled entity sources).
+3. **Clutch** + **The Manifest** — B2B agency listings.
+4. **Google Business Profile** — establishes the entity even remote-first.
 
 ---
 
@@ -258,7 +285,9 @@ Do when domain is live:
 [ ] Pick www vs non-www; 301 the other
 [ ] Verify Google Search Console + submit sitemap
 [ ] Verify Bing Webmaster Tools + submit sitemap
-[ ] Create public/og-image.jpg (1200×630) + validate with share inspectors
+[x] OG images: auto-generated per-page branded cards at build (astro-og-canvas
+    → /og/*.png; src/pages/og/[...route].ts + src/lib/og.ts). Validate live with
+    the share inspectors once deployed.
 [ ] Update SOCIALS.linkedin in src/config.ts with real handle
 
 Do when accounts exist:
@@ -273,6 +302,11 @@ Content / structure (next build phase):
 [ ] Per-page title + description on remaining pages (privacy-policy)
 [ ] Fill in real case-study copy in src/content/work/*.md
 [ ] Replace remote Google-CDN portfolio covers with local astro:assets
-[ ] Add src/pages/404.astro
-[ ] Consider a blog/FAQ for question-shaped AI-citable content
+[x] Add src/pages/404.astro (noindex, branded, with recovery links)
+[x] FAQ section on /services (bilingual) with FAQPage JSON-LD — question-shaped, AI-citable
+[x] Upgrade Organization schema → Organization + ProfessionalService (serviceType, areaServed, knowsLanguage)
+[x] Rewrite llms.txt to list every page + all case studies (was Home/Privacy only)
+[x] Blog: content collection + /blog index + posts + BlogPosting schema + RSS
+    (bilingual). 1 seed post. Automated drafter documented in docs/blog-automation.md
+    (queue: content-queue.md) — activate via Claude routine or n8n when ready.
 ```
