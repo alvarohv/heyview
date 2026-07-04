@@ -1,0 +1,61 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Page not found: HeyView" description="The page you were looking for doesn't exist or has moved." noindex>
+  <div class="max-w-360 mx-auto relative shadow-sm">
+    <Navbar transition:persist />
+    <main id="main-content">
+      <section class="grain bg-navy min-h-[70vh] flex items-center">
+        <div class="px-5 md:px-16 py-24 md:py-32 w-full">
+          <span class="eyebrow text-accent">Error 404</span>
+          <h1 class="font-serif text-[56px] md:text-[80px] text-cream font-light leading-[1.05] mt-6">
+            This page took a wrong turn.
+          </h1>
+          <p
+            class="font-sans text-[17px] md:text-[20px] leading-relaxed max-w-xl mt-6"
+            style="color: rgba(245,240,232,0.65);"
+          >
+            The page you were looking for doesn't exist or has moved. Let's get you back to something useful.
+          </p>
+
+          <div class="flex flex-wrap gap-4 mt-10">
+            <a
+              href="/"
+              class="inline-flex items-center justify-center font-sans text-[13px] font-medium tracking-widest uppercase px-8 py-4 bg-cream text-navy transition-opacity duration-150 hover:opacity-88"
+            >
+              Back home
+            </a>
+            <a
+              href="/work"
+              class="inline-flex items-center justify-center gap-2 font-sans text-[13px] font-medium tracking-widest uppercase px-8 py-4 border border-cream/25 text-cream transition-colors duration-150 hover:border-cream/60"
+            >
+              See our work →
+            </a>
+          </div>
+
+          <nav class="mt-16 flex flex-wrap gap-x-8 gap-y-3" aria-label="Helpful links">
+            {[
+              { label: 'Services', href: '/services' },
+              { label: 'For specialty practices', href: '/health' },
+              { label: 'Privacy Policy', href: '/privacy-policy' },
+            ].map((link) => (
+              <a
+                href={link.href}
+                class="font-sans text-[14px] transition-colors duration-150"
+                style="color: rgba(245,240,232,0.5);"
+                onmouseover="this.style.color='rgba(245,240,232,0.85)'"
+                onmouseout="this.style.color='rgba(245,240,232,0.5)'"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </section>
+    </main>
+    <Footer />
+  </div>
+</Layout>

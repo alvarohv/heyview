@@ -70,11 +70,41 @@ const work = defineCollection({
   }),
 });
 
-export const collections = { work };
+// Blog / articles. Same file-per-locale convention as `work` (e.g.
+// `my-post.en.md` / `my-post.es.md`) so both translations share one URL slug.
+// Question-shaped posts are the highest-leverage content for AI/LLM citation.
+const blog = defineCollection({
+  loader: glob({
+    pattern: '**/*.md',
+    base: './src/content/blog',
+    generateId: ({ entry }) => entry.replace(/\.md$/, ''),
+  }),
+  schema: z.object({
+    lang: z.enum(['en', 'es']).default('en'),
+    title: z.string(),
+    /** 1–2 sentences. Used on cards, meta description, and RSS. */
+    description: z.string(),
+    pubDate: z.coerce.date(),
+    updatedDate: z.coerce.date().optional(),
+    author: z.string().default('HeyView'),
+    tags: z.array(z.string()).default([]),
+    /** Cover image: path under /public or a remote URL. */
+    cover: z.string().optional(),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { work, blog };
 
 /** Work collection ids are `<slug>.<lang>` (e.g. `coolbrand.es`) since the
  *  loader derives ids from filenames. Strip the suffix to get the URL slug
  *  shared across both locale versions of a case study. */
 export function workSlug(id: string): string {
+  return id.replace(/\.(en|es)$/, '');
+}
+
+/** Blog ids follow the same `<slug>.<lang>` scheme as work — strip the locale
+ *  suffix to get the URL slug shared across both language versions. */
+export function blogSlug(id: string): string {
   return id.replace(/\.(en|es)$/, '');
 }

@@ -1,0 +1,109 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { render } from 'astro:content';
+import { blogSlug } from '../content.config';
+import { useTranslations, getRelativeLocaleUrl } from '../i18n/utils';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const locale = post.data.lang === 'es' ? 'es' : 'en';
+const t = useTranslations(locale).blogPage;
+
+const slug = blogSlug(post.id);
+const pageUrl = new URL(getRelativeLocaleUrl(locale, `/blog/${slug}`), Astro.site).href;
+const blogHref = getRelativeLocaleUrl(locale, '/blog');
+
+const { title, description, pubDate, updatedDate, author, tags, cover } = post.data;
+
+const dateFmt = new Intl.DateTimeFormat(locale === 'es' ? 'es' : 'en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const authorName = author === 'HeyView' ? 'HeyView Studio' : author;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: title,
+  description,
+  datePublished: pubDate.toISOString(),
+  dateModified: (updatedDate ?? pubDate).toISOString(),
+  author: { '@type': 'Organization', name: authorName },
+  publisher: { '@type': 'Organization', name: 'HeyView Studio' },
+  inLanguage: locale,
+  mainEntityOfPage: pageUrl,
+  ...(cover && { image: new URL(cover, Astro.site).href }),
+};
+---
+
+<main id="main-content">
+  <article>
+    <!-- ── Hero (navy) ── -->
+    <section class="grain bg-navy">
+      <div class="px-5 md:px-16 pt-20 pb-16 max-w-3xl">
+        <a
+          href={blogHref}
+          class="inline-flex items-center gap-2 font-sans text-[12px] font-semibold tracking-widest uppercase transition-colors duration-200"
+          style="color: rgba(245,240,232,0.4);"
+          onmouseover="this.style.color='rgba(245,240,232,0.75)'"
+          onmouseout="this.style.color='rgba(245,240,232,0.4)'"
+        >
+          <span
+            class="material-symbols-outlined"
+            style="font-size:14px; font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 20;"
+          >arrow_back</span>
+          {t.backToBlog}
+        </a>
+
+        <div class="flex flex-wrap items-center gap-3 mt-10 mb-6">
+          <time class="eyebrow text-accent" datetime={pubDate.toISOString()}>
+            {dateFmt.format(pubDate)}
+          </time>
+          {tags.slice(0, 3).map((tag) => (
+            <>
+              <span style="color: rgba(245,240,232,0.2);">•</span>
+              <span class="eyebrow" style="color: rgba(245,240,232,0.55);">{tag}</span>
+            </>
+          ))}
+        </div>
+
+        <h1 class="font-serif text-[36px] md:text-[52px] text-cream font-light leading-[1.12]">
+          {title}
+        </h1>
+
+        <p
+          class="font-sans text-[17px] md:text-[20px] leading-relaxed mt-6"
+          style="color: rgba(245,240,232,0.65);"
+        >
+          {description}
+        </p>
+
+        <p class="font-sans text-[13px] mt-8" style="color: rgba(245,240,232,0.4);">
+          {t.by} {authorName}
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Body ── -->
+    <div class="bg-cream px-5 md:px-16 py-16 md:py-24">
+      <div class="prose-light font-sans text-[17px] leading-relaxed max-w-2xl">
+        <Content />
+      </div>
+
+      {updatedDate && (
+        <p class="font-sans text-[13px] text-muted max-w-2xl mt-12">
+          {t.updatedOn} {dateFmt.format(updatedDate)}
+        </p>
+      )}
+    </div>
+  </article>
+</main>
+
+<script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />

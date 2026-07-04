@@ -6,7 +6,7 @@ const es = {
   common: {
     bookACall: 'Agenda una llamada',
     bookDiscoveryCall: 'Agenda una llamada de diagnóstico',
-    defaultTitle: 'HeyView — Sistemas de diseño e IA para operaciones complejas',
+    defaultTitle: 'HeyView: Sistemas de diseño e IA para operaciones complejas',
     description:
       'Diseñamos los sistemas y experiencias que hacen tu negocio más ágil, rápido y fácil de escalar. Automatización, diseño e IA para negocios que operan con procesos complejos.',
     tagline: 'Claridad para sistemas complejos.',
@@ -15,6 +15,7 @@ const es = {
   nav: {
     services: 'Servicios',
     work: 'Trabajo',
+    blog: 'Blog',
     about: 'Nosotros',
     contact: 'Contacto',
   },
@@ -23,6 +24,7 @@ const es = {
     statement: 'Construido para operaciones que exigen más.',
     nav: [
       { label: 'Trabajo', href: '/work', localized: true },
+      { label: 'Blog', href: '/blog', localized: true },
       { label: 'Proceso', href: '/#process', localized: true },
       { label: 'Contacto', href: '/#contact', localized: true },
       { label: 'Política de Privacidad', href: '/privacy-policy', localized: false },
@@ -48,12 +50,12 @@ const es = {
       {
         number: '02',
         title: 'Comunicación con clientes y asistentes de IA',
-        body: 'Tus clientes escriben a las 9 PM por WhatsApp, Instagram y correo — y le compran a quien responda primero. Construimos asistentes de IA que responden al instante, agendan la cita y recuperan a los que se quedaron sin respuesta.',
+        body: 'Tus clientes escriben a las 9 PM por WhatsApp, Instagram y correo, y le compran a quien responda primero. Construimos asistentes de IA que responden al instante, agendan la cita y recuperan a los que se quedaron sin respuesta.',
       },
       {
         number: '03',
         title: 'Dashboards de operaciones',
-        body: 'Los reportes te dicen qué pasó. Nosotros construimos dashboards que te dicen qué hacer después — pensados para quien toma la decisión, no para quien exporta el CSV.',
+        body: 'Los reportes te dicen qué pasó. Nosotros construimos dashboards que te dicen qué hacer después: pensados para quien toma la decisión, no para quien exporta el CSV.',
       },
       {
         number: '04',
@@ -92,12 +94,12 @@ const es = {
   about: {
     headline: 'Construido por ingenieros y diseñadores en busca de claridad.',
     intro:
-      'HeyView fue fundada en Costa Rica por Alvaro Hernandez y Sinaí Alfaro. 22 años construyendo sistemas para hospitales, multinacionales y operaciones empresariales. Ahora aplicamos ese mismo rigor a negocios que lo merecen — sin el cronograma de 18 meses.',
+      'HeyView fue fundada en Costa Rica por Alvaro Hernandez y Sinaí Alfaro. 22 años construyendo sistemas para hospitales, multinacionales y operaciones empresariales. Ahora aplicamos ese mismo rigor a negocios que lo merecen, sin el cronograma de 18 meses.',
     founders: [
       {
         name: 'Alvaro Hernandez',
         role: 'Arquitecto de IA y Sistemas',
-        bio: '22 años en software empresarial e IA — diseñando sistemas para salud, finanzas y manufactura, incluyendo Johnson & Johnson.',
+        bio: '22 años en software empresarial e IA, diseñando sistemas para salud, finanzas y manufactura, incluyendo Johnson & Johnson.',
       },
       {
         name: 'Sinaí Alfaro',
@@ -150,8 +152,8 @@ const es = {
     requestCaseStudy: 'Solicitar caso de estudio →',
   },
   workPage: {
-    title: 'Trabajo — HeyView',
-    description: 'Trabajo seleccionado de HeyView — diseño, automatización y sistemas de IA para operaciones complejas.',
+    title: 'Trabajo: HeyView',
+    description: 'Trabajo seleccionado de HeyView: diseño, automatización y sistemas de IA para operaciones complejas.',
     eyebrow: 'Trabajo Seleccionado',
     headline: 'El trabajo.',
     subhead: 'Un registro creciente de sistemas y diseño construidos para negocios que van en serio.',
@@ -176,13 +178,13 @@ const es = {
     nextProject: 'Siguiente Proyecto',
   },
   servicesPage: {
-    title: 'Servicios — HeyView',
+    title: 'Servicios: HeyView',
     description:
       'HeyView construye automatización con IA, dashboards de operaciones e integraciones de sistemas para consultorios especializados y equipos de operaciones. Alcance fijo, manos senior, entrega en cuatro semanas.',
     hero: {
       eyebrow: 'Servicios',
       h1: 'Sistemas que funcionan un martes cualquiera.',
-      body: 'La mayoría de los sistemas están hechos para impresionar en una demo. Nosotros construimos el tipo que sigue funcionando cuando el fundador está de vacaciones, el nuevo empleado empezó el lunes, y es un martes cualquiera. Automatización, herramientas internas e IA — construidos sobre el software que ya usas.',
+      body: 'La mayoría de los sistemas están hechos para impresionar en una demo. Nosotros construimos el tipo que sigue funcionando cuando el fundador está de vacaciones, el nuevo empleado empezó el lunes, y es un martes cualquiera. Automatización, herramientas internas e IA, construidos sobre el software que ya usas.',
       indexLabel: 'Cuatro capacidades',
       indexItems: [
         { num: '01', name: 'Automatización' },
@@ -199,41 +201,41 @@ const es = {
         body: 'Si un documento le toma a tres personas dos días producir cada semana, eso no es un proceso. Es un problema con rutina. Automatizamos la rutina: generación de documentos, enrutamiento de aprobaciones, movimiento de datos entre sistemas, la misma firma por cuarta vez.',
         whatYouGet: [
           'Menos errores cada semana. Tiempo que no depende de quién esté en la oficina.',
-          'Un flujo automatizado para cualquier documento que tu negocio genere — sin captura manual, sin confusión de versiones y con un rastro de auditoría claro.',
+          'Un flujo automatizado para cualquier documento que tu negocio genere: sin captura manual, sin confusión de versiones y con un rastro de auditoría claro.',
         ],
       },
       {
         num: '02',
         tag: 'Comunicación con clientes y asistentes de IA',
         h2: 'Cada mensaje sin responder es ingreso que se va por la puerta.',
-        body: 'Tus clientes escriben a las 9 PM por WhatsApp, Instagram y correo — y le compran a quien responda primero. Construimos asistentes de IA que responden al instante, agendan desde donde sea que respondan, dan seguimiento y recuperan a los que se quedaron callados. Con una persona tomando el control en el momento que importa.',
+        body: 'Tus clientes escriben a las 9 PM por WhatsApp, Instagram y correo, y le compran a quien responda primero. Construimos asistentes de IA que responden al instante, agendan desde donde sea que respondan, dan seguimiento y recuperan a los que se quedaron callados. Con una persona tomando el control en el momento que importa.',
         whatYouGet: [
           'Respuesta más rápida que cualquier recepción. Cero leads y citas perdidas. Ingreso recuperado que puedes contar de verdad.',
-          'Asistente de IA para citas — confirmadas y recordadas. Bandeja de IA para WhatsApp, Instagram y correo — calificada y enrutada.',
+          'Asistente de IA para citas: confirmadas y recordadas. Bandeja de IA para WhatsApp, Instagram y correo: calificada y enrutada.',
         ],
       },
       {
         num: '03',
         tag: 'Dashboards de operaciones',
         h2: 'Deja de manejar el negocio desde una hoja de cálculo que solo una persona entiende.',
-        body: 'Los reportes te dicen qué pasó. Nosotros construimos dashboards que te dicen qué hacer después — pensados para quien toma la decisión, no para quien arma el reporte. Una sola versión de la verdad.',
+        body: 'Los reportes te dicen qué pasó. Nosotros construimos dashboards que te dicen qué hacer después: pensados para quien toma la decisión, no para quien arma el reporte. Una sola versión de la verdad.',
         whatYouGet: [
           'Una pantalla que tu equipo realmente abre cada mañana. Números que puedes defender.',
-          'Diseñamos los reportes alrededor de las decisiones que tomas. Construimos la infraestructura que mantiene los datos limpios — consultables, consistentes, defendibles.',
+          'Diseñamos los reportes alrededor de las decisiones que tomas. Construimos la infraestructura que mantiene los datos limpios: consultables, consistentes, defendibles.',
         ],
       },
       {
         num: '04',
         tag: 'Integraciones',
         h2: 'Ya pagas por buen software. Solo que no se habla entre sí.',
-        body: 'No vendemos plataformas ni te haremos reemplazar nada. Pasamos la primera semana conectando tu sistema de citas con tu facturación, tu CRM con tus hojas de cálculo, tus formularios con el sistema que realmente necesita esos datos. Y cuando el problema es fuera de lo común — conocimiento interno consultable, IA sobre años de documentos — aquí también lo construimos.',
+        body: 'No vendemos plataformas ni te haremos reemplazar nada. Pasamos la primera semana conectando tu sistema de citas con tu facturación, tu CRM con tus hojas de cálculo, tus formularios con el sistema que realmente necesita esos datos. Y cuando el problema es fuera de lo común (conocimiento interno consultable, IA sobre años de documentos), aquí también lo construimos.',
         whatYouGet: ['El stack que ya tienes, funcionando como un solo sistema.'],
       },
     ],
     studio: {
       eyebrow: 'El estudio',
       h2: 'Diseñado, no solo construido.',
-      body: 'La mitad de este estudio es una diseñadora de producto senior. Cada dashboard, herramienta interna e IA que entregamos cumple el mismo estándar de diseño que un sitio de marca público y querido — porque nadie odia usar el software que la gente realmente usa. Eso no es un acabado extra. Es la razón por la que los sistemas se quedan.',
+      body: 'La mitad de este estudio es una diseñadora de producto senior. Cada dashboard, herramienta interna e IA que entregamos cumple el mismo estándar de diseño que un sitio de marca público y querido, porque nadie odia usar el software que la gente realmente usa. Eso no es un acabado extra. Es la razón por la que los sistemas se quedan.',
       linkText: 'Nuestro trabajo',
       statKicker: 'Trayectoria',
       statUnit: 'años construyendo sistemas',
@@ -249,7 +251,7 @@ const es = {
       cards: [
         {
           label: 'Sin cobro por hora',
-          body: 'Sin cobro por hora, nunca — compras un resultado, no nuestro tiempo. Los cambios de alcance reciben una nueva cotización. Por escrito, antes de mover nada.',
+          body: 'Sin cobro por hora, nunca: compras un resultado, no nuestro tiempo. Los cambios de alcance reciben una nueva cotización. Por escrito, antes de mover nada.',
         },
         {
           label: 'Equipo pequeño, sin capas',
@@ -263,7 +265,7 @@ const es = {
       yes: {
         label: 'Esto es para ti si',
         items: [
-          'Tu negocio corre sobre operaciones reales — citas, documentos, aprobaciones, inventario, facturación.',
+          'Tu negocio corre sobre operaciones reales: citas, documentos, aprobaciones, inventario, facturación.',
           'Te ahogas en software que no genera ingresos.',
           'Algo creció rápido y los procesos no alcanzaron a seguirle el paso.',
           'Puedes tomar esta decisión sin un comité.',
@@ -295,35 +297,79 @@ const es = {
     ctaSection: {
       eyebrow: 'Hablemos',
       h2: 'Treinta minutos sobre tu operación. No es una llamada de ventas.',
-      body: 'Cuéntanos por dónde se fuga el tiempo — el reporte que nadie quiere armar, la hoja de cálculo que todos temen, las inasistencias, la doble captura. Te diremos qué automatizaríamos primero y qué no tocaríamos.',
+      body: 'Cuéntanos por dónde se fuga el tiempo: el reporte que nadie quiere armar, la hoja de cálculo que todos temen, las inasistencias, la doble captura. Te diremos qué automatizaríamos primero y qué no tocaríamos.',
     },
   },
+  faq: {
+    eyebrow: 'Preguntas frecuentes',
+    headline: 'Lo que nos preguntan antes de la primera llamada.',
+    items: [
+      {
+        q: '¿Qué hace HeyView?',
+        a: 'HeyView es un estudio de diseño, automatización e IA para consultorios especializados y negocios con operaciones exigentes. Construimos automatización de documentos y procesos, asistentes de IA para comunicación con clientes, dashboards de operaciones e integraciones a medida sobre el software que ya usas.',
+      },
+      {
+        q: '¿Cuánto dura un proyecto?',
+        a: 'La mayoría de los proyectos se entregan en alrededor de cuatro semanas. Trabajamos con alcance cerrado y precio fijo, acordado antes de escribir una línea de código, así conoces el costo y el plazo completos desde el inicio.',
+      },
+      {
+        q: '¿Cuánto cuesta?',
+        a: 'No cobramos por hora. Compras un resultado definido por un precio fijo, acordado por escrito antes de empezar. Tomamos dos o tres clientes nuevos por trimestre y los fundadores hacen el trabajo: sin gerentes de cuenta ni equipos junior aprendiendo en tu proyecto.',
+      },
+      {
+        q: '¿Reemplazan el software que ya usamos?',
+        a: 'No. Construimos una capa por encima de las herramientas que ya pagas, conectando tu agenda, facturación, CRM y hojas de cálculo para que funcionen como un solo sistema. No se reemplaza nada y tu equipo no reaprende nada.',
+      },
+      {
+        q: '¿Con qué industrias trabajan?',
+        a: 'Negocios de operaciones intensivas: consultorios médicos especializados (odontología, estética, dermatología, ortopedia, fisioterapia, oftalmología, veterinaria), equipos de finanzas y operaciones, y empresas de servicios en campo. Los sistemas de base son reutilizables entre industrias.',
+      },
+      {
+        q: '¿Dónde está HeyView?',
+        a: 'HeyView está en Costa Rica y trabaja con clientes en Estados Unidos y América Latina, en inglés y español. Fue fundado por Alvaro Hernandez (Arquitecto de IA y Sistemas) y Sinaí Alfaro (Líder de Diseño y Producto).',
+      },
+    ],
+  },
+  blogPage: {
+    title: 'Blog: HeyView',
+    description:
+      'Notas de campo sobre automatización, IA y diseño para negocios con operaciones exigentes — respuestas prácticas a las preguntas que nos hacen antes de cada proyecto.',
+    eyebrow: 'Notas de campo',
+    headline: 'Notas sobre sistemas que funcionan.',
+    subhead: 'Escritos prácticos sobre automatización, IA y diseño para negocios que operan con procesos complejos.',
+    readMore: 'Leer artículo',
+    backToBlog: 'Todos los artículos',
+    empty: 'Aún no hay artículos — el primero viene en camino.',
+    publishedOn: 'Publicado',
+    updatedOn: 'Actualizado',
+    by: 'Por',
+  },
   healthPage: {
-    title: 'Operaciones y sistemas de IA para consultorios especializados — HeyView',
+    title: 'Operaciones y sistemas de IA para consultorios especializados: HeyView',
     description:
       'Deja de perder ingreso por inasistencias y trabajo administrativo manual. Agendamiento que responde a las 9 PM, seguimiento que no se le olvida a nadie, y un dashboard que tu recepción realmente usa.',
     hero: {
       eyebrow: 'Para consultorios especializados',
       h1: 'Deja de perder ingreso por inasistencias y trabajo administrativo manual.',
-      body: 'Tu agenda es tu inventario. Cada silla vacía es una venta que no puedes hacer dos veces — y la mayoría eran evitables. Construimos el sistema de operaciones que las llena: agendamiento que responde a las 9 PM, seguimiento que no se le olvida a nadie, y un dashboard que tu recepción realmente usa.',
+      body: 'Tu agenda es tu inventario. Cada silla vacía es una venta que no puedes hacer dos veces, y la mayoría eran evitables. Construimos el sistema de operaciones que las llena: agendamiento que responde a las 9 PM, seguimiento que no se le olvida a nadie, y un dashboard que tu recepción realmente usa.',
       cta: 'Agenda una llamada de diagnóstico',
     },
     pain: {
       h2: 'No abriste un consultorio para perseguir confirmaciones.',
-      body: 'Un paciente agenda, y luego desaparece. La recepción llama dos veces, deja un mensaje de voz, sigue adelante — hay otras cuarenta cosas que hacer. El espacio queda vacío, el costo fijo no. Multiplica eso por cada semana, súmale los formularios de admisión capturados dos veces y los mensajes de "¿puedo reagendar?" que llegan de noche por WhatsApp, y obtienes el número real: la mayoría de los consultorios pierden más ingreso por fricción administrativa que por competencia.',
+      body: 'Un paciente agenda, y luego desaparece. La recepción llama dos veces, deja un mensaje de voz, sigue adelante; hay otras cuarenta cosas que hacer. El espacio queda vacío, el costo fijo no. Multiplica eso por cada semana, súmale los formularios de admisión capturados dos veces y los mensajes de "¿puedo reagendar?" que llegan de noche por WhatsApp, y obtienes el número real: la mayoría de los consultorios pierden más ingreso por fricción administrativa que por competencia.',
       points: [
         'Una inasistencia no es un inconveniente. Es inventario que caducó.',
-        'Los pacientes agendan con quien responda primero — incluso a las 9 PM.',
+        'Los pacientes agendan con quien responda primero, incluso a las 9 PM.',
         'Las horas de tu equipo se van en perseguir, no en atender.',
       ],
     },
     system: {
       h2: 'Un solo sistema para todo el recorrido del paciente.',
-      body: 'Construido sobre el software de agendamiento y las herramientas que ya usas — nada se reemplaza, tu equipo no tiene que reaprender nada.',
+      body: 'Construido sobre el software de agendamiento y las herramientas que ya usas: nada se reemplaza, tu equipo no tiene que reaprender nada.',
       pillars: [
         {
           title: 'Agendamiento que nunca duerme',
-          body: 'Agendamiento conversacional por WhatsApp y SMS, en tu tono. Responde al instante, encuentra el espacio correcto con el profesional correcto, y prellena la admisión con datos de visitas anteriores — así el paciente llega con el papeleo ya listo.',
+          body: 'Agendamiento conversacional por WhatsApp y SMS, en tu tono. Responde al instante, encuentra el espacio correcto con el profesional correcto, y prellena la admisión con datos de visitas anteriores, así el paciente llega con el papeleo ya listo.',
         },
         {
           title: 'Recuperación de inasistencias',
@@ -339,17 +385,17 @@ const es = {
     },
     pedigree: {
       h2: 'Construimos para el sector salud desde antes de que la IA fuera un discurso de venta.',
-      body: 'Nueve años construyendo sistemas para hospitales y marcas de salud. Veintidós años diseñando operaciones para multinacionales — incluyendo un sistema de planificación de capacidad para una manufacturera global de dispositivos médicos y un cierre contable que pasó de 80 horas al mes a seis. No somos un revendedor de chatbots descubriendo medicina este trimestre. Sabemos por qué tu software de citas, tus expedientes y tu recepción no se hablan entre sí — y cómo arreglarlo sin reemplazar ninguno.',
+      body: 'Nueve años construyendo sistemas para hospitales y marcas de salud. Veintidós años diseñando operaciones para multinacionales, incluyendo un sistema de planificación de capacidad para una manufacturera global de dispositivos médicos y un cierre contable que pasó de 80 horas al mes a seis. No somos un revendedor de chatbots descubriendo medicina este trimestre. Sabemos por qué tu software de citas, tus expedientes y tu recepción no se hablan entre sí, y cómo arreglarlo sin reemplazar ninguno.',
       linkText: 'Ver el trabajo →',
     },
     fit: {
       h2: 'Construido para consultorios que dependen de las citas.',
       specialtiesLabel: 'Clínicas dentales, consultorios de estética y dermatología, ortopedia, fisioterapia, oftalmología, veterinaria.',
-      intro: 'Si tu semana vive o muere por la agenda — y tienes un equipo manejándola — esto es para ti.',
+      intro: 'Si tu semana vive o muere por la agenda, y tienes un equipo manejándola, esto es para ti.',
       goodLabel: 'Un buen encaje',
       good: [
         '2 a 8 profesionales. Ya usan agendamiento en línea o software de consultorio moderno.',
-        'En crecimiento — nuevas sillas, nuevos consultorios, quizás una segunda sede — y la parte administrativa no creció al mismo ritmo.',
+        'En crecimiento (nuevas sillas, nuevos consultorios, quizás una segunda sede) y la parte administrativa no creció al mismo ritmo.',
       ],
       notFitLabel: 'No es un encaje',
       notFit: [
@@ -366,7 +412,7 @@ const es = {
         {
           number: '01',
           title: 'Descubrimiento',
-          body: 'Mapeamos cómo se mueven realmente los pacientes por tu consultorio — desde el primer mensaje hasta el seguimiento — antes de tocar nada.',
+          body: 'Mapeamos cómo se mueven realmente los pacientes por tu consultorio, desde el primer mensaje hasta el seguimiento, antes de tocar nada.',
         },
         {
           number: '02',
@@ -387,7 +433,7 @@ const es = {
     },
     ctaSection: {
       h2: 'Treinta minutos sobre tu consultorio. No es una llamada de ventas.',
-      body: 'Cuéntanos cómo funciona el agendamiento hoy, dónde duelen las inasistencias, qué le teme la recepción. Te diremos qué automatizaríamos primero — y qué no tocaríamos. Te vas con una idea más clara de tu propia operación, trabajemos juntos o no.',
+      body: 'Cuéntanos cómo funciona el agendamiento hoy, dónde duelen las inasistencias, qué le teme la recepción. Te diremos qué automatizaríamos primero, y qué no tocaríamos. Te vas con una idea más clara de tu propia operación, trabajemos juntos o no.',
       button: 'Agenda una llamada de diagnóstico',
       note: 'Inglés o español. No necesitas prepararte.',
     },

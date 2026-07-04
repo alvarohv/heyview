@@ -1,0 +1,139 @@
+---
+// Accessible, zero-JS FAQ accordion (<details>/<summary>) that doubles as an
+// AI/LLM grounding surface: it emits FAQPage JSON-LD so search engines and
+// assistants can extract our answers verbatim. Question-shaped content is the
+// highest-leverage thing we can add for generative-engine (GEO) visibility.
+import { useTranslations } from '../i18n/utils';
+
+const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
+const t = useTranslations(locale).faq;
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  inLanguage: locale,
+  mainEntity: t.items.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
+};
+---
+
+<section id="faq" class="faq-section" aria-label={t.headline}>
+  <div class="faq-container">
+    <span class="faq-eyebrow">{t.eyebrow}</span>
+    <h2 class="faq-h2">{t.headline}</h2>
+
+    <div class="faq-list">
+      {t.items.map((item, i) => (
+        <details class="faq-item" name="faq" open={i === 0}>
+          <summary class="faq-q">
+            <span class="faq-q-text">{item.q}</span>
+            <span class="faq-icon" aria-hidden="true"></span>
+          </summary>
+          <div class="faq-a"><p>{item.a}</p></div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script is:inline type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+
+<style>
+  .faq-section {
+    background: #F5F0E8;
+    padding: 104px 0;
+    border-top: 0.5px solid #E7E1D6;
+    font-family: 'Inter Variable', system-ui, sans-serif;
+  }
+  .faq-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 80px;
+  }
+  .faq-eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(30, 42, 56, 0.74);
+    margin-bottom: 18px;
+  }
+  .faq-h2 {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: clamp(30px, 3.6vw, 42px);
+    font-weight: 400;
+    color: #1E2A38;
+    line-height: 1.15;
+    max-width: 560px;
+    margin-bottom: 48px;
+  }
+
+  .faq-item {
+    border-top: 0.5px solid #E7E1D6;
+  }
+  .faq-item:last-child {
+    border-bottom: 0.5px solid #E7E1D6;
+  }
+  .faq-q {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 26px 4px;
+    cursor: pointer;
+    list-style: none;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: clamp(19px, 2.2vw, 23px);
+    font-weight: 500;
+    color: #1E2A38;
+    transition: color 0.15s ease;
+  }
+  .faq-q::-webkit-details-marker { display: none; }
+  .faq-q:hover { color: #A67C52; }
+  .faq-q-text { flex: 1; }
+
+  /* Plus → minus icon, built from two bars so it needs no font/asset. */
+  .faq-icon {
+    position: relative;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+  }
+  .faq-icon::before,
+  .faq-icon::after {
+    content: '';
+    position: absolute;
+    background: #A67C52;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .faq-icon::before { top: 7px; left: 0; width: 16px; height: 2px; }
+  .faq-icon::after  { left: 7px; top: 0; width: 2px; height: 16px; }
+  .faq-item[open] .faq-icon::after { transform: scaleY(0); opacity: 0; }
+
+  .faq-a {
+    padding: 0 4px 28px;
+    max-width: 640px;
+  }
+  .faq-a p {
+    font-size: 16px;
+    line-height: 1.7;
+    color: rgba(30, 42, 56, 0.8);
+  }
+
+  @media (max-width: 1024px) {
+    .faq-container { padding: 0 48px; }
+  }
+  @media (max-width: 767px) {
+    .faq-section { padding: 72px 0; }
+    .faq-container { padding: 0 20px; }
+    .faq-h2 { margin-bottom: 32px; }
+    .faq-q { font-size: 19px; padding: 22px 2px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .faq-icon::before, .faq-icon::after { transition: none; }
+  }
+</style>

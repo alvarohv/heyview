@@ -1,5 +1,6 @@
 ---
 import { useTranslations, getRelativeLocaleUrl } from '../i18n/utils';
+import FAQ from './FAQ.astro';
 
 const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
 const dict = useTranslations(locale);
@@ -348,6 +349,9 @@ const workHref = getRelativeLocaleUrl(locale, '/work');
       </div>
     </div>
   </section>
+
+  <!-- FAQ (cream) — question-shaped content + FAQPage schema for AI/LLM citation -->
+  <FAQ />
 
   <!-- CTA (dark) -->
   <section id="cta" aria-label="Get in touch">

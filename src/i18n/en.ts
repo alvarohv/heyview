@@ -13,6 +13,7 @@ export default {
   nav: {
     services: 'Services',
     work: 'Work',
+    blog: 'Blog',
     about: 'About',
     contact: 'Contact',
   },
@@ -21,6 +22,7 @@ export default {
     statement: 'Built for operations that demand more.',
     nav: [
       { label: 'Work', href: '/work', localized: true },
+      { label: 'Blog', href: '/blog', localized: true },
       { label: 'Process', href: '/#process', localized: true },
       { label: 'Contact', href: '/#contact', localized: true },
       { label: 'Privacy Policy', href: '/privacy-policy', localized: false },
@@ -293,6 +295,50 @@ export default {
       h2: 'Thirty minutes on your operation. Not a sales call.',
       body: "Tell us where the time leaks: the report nobody wants to build, the spreadsheet everyone fears, the no-shows, the double entry. We'll tell you what we'd automate first and what we wouldn't touch.",
     },
+  },
+  faq: {
+    eyebrow: 'Common questions',
+    headline: 'Questions we get before the first call.',
+    items: [
+      {
+        q: 'What does HeyView do?',
+        a: 'HeyView is a design, automation, and AI studio for specialty practices and operations-heavy businesses. We build document and process automation, AI customer-communication assistants, operations dashboards, and custom system integrations on top of the software you already use.',
+      },
+      {
+        q: 'How long does a project take?',
+        a: 'Most engagements ship in about four weeks. We work in fixed scope with a fixed quote agreed before any code is written, so you know the full cost and timeline up front.',
+      },
+      {
+        q: 'How much does it cost?',
+        a: "We don't bill hourly. You buy a defined outcome for a fixed quote, agreed in writing before we start. We take two to three new clients per quarter and the founders do the work: no account managers, no junior team learning on your project.",
+      },
+      {
+        q: 'Do you replace our existing software?',
+        a: 'No. We build a layer on top of the tools you already pay for, connecting your scheduling, billing, CRM, and spreadsheets so they work as one system. Nothing gets ripped out and your team doesn\'t relearn anything.',
+      },
+      {
+        q: 'What industries do you work with?',
+        a: 'Operations-heavy businesses: specialty medical practices (dental, aesthetic, dermatology, orthopedics, physical therapy, ophthalmology, veterinary), finance and operations teams, and field-service companies. The underlying systems are reusable across industries.',
+      },
+      {
+        q: 'Where is HeyView based?',
+        a: 'HeyView is based in Costa Rica and works with clients across the United States and Latin America, in English and Spanish. It was founded by Alvaro Hernandez (AI & Systems Architect) and Sinaí Alfaro (Design & Product Lead).',
+      },
+    ],
+  },
+  blogPage: {
+    title: 'Blog: HeyView',
+    description:
+      'Field notes on automation, AI, and design for operations-heavy businesses — practical answers to the questions we get before every project.',
+    eyebrow: 'Field notes',
+    headline: 'Notes on systems that work.',
+    subhead: 'Practical writing on automation, AI, and design for businesses that run on complex operations.',
+    readMore: 'Read article',
+    backToBlog: 'All articles',
+    empty: 'No articles yet — the first one is on the way.',
+    publishedOn: 'Published',
+    updatedOn: 'Updated',
+    by: 'By',
   },
   healthPage: {
     title: 'Operations & AI systems for specialty practices: HeyView',

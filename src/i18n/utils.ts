@@ -16,11 +16,11 @@ export function ogLocale(locale: string | undefined): 'en_US' | 'es_419' {
 
 /** Paths that currently have a real Spanish translation. Expand as later
  *  phases (e.g. privacy-policy) ship their own /es routes. */
-const translatedPaths = new Set(['/', '/services', '/work', '/health']);
+const translatedPaths = new Set(['/', '/services', '/work', '/health', '/blog']);
 
 /** Case study detail pages share a slug across locales (see workSlug in
  *  content.config.ts), so any /work/<slug> is assumed translated. */
-const translatedPrefixes = ['/work/'];
+const translatedPrefixes = ['/work/', '/blog/'];
 
 function isTranslatedPath(bare: string): boolean {
   if (translatedPaths.has(bare)) return true;

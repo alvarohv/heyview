@@ -4,6 +4,7 @@ import { SITE, SOCIALS } from '../config';
 import PostHog from '../components/posthog.astro';
 import { ClientRouter } from 'astro:transitions';
 import { useTranslations, ogLocale, getAlternateUrls } from '../i18n/utils';
+import { buildOgPages, ogImageKey } from '../lib/og';
 
 interface Props {
   title?: string;
@@ -19,10 +20,18 @@ interface Props {
 const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
 const t = useTranslations(locale);
 
+// Default share image: the branded OG card auto-generated for this URL
+// (src/pages/og/[...route].ts). Falls back to the home card for any route
+// without its own card (e.g. 404). A page can still override via the `image`
+// prop (case studies pass their cover).
+const ogPages = await buildOgPages();
+const ogKey = ogImageKey(Astro.url.pathname);
+const generatedOg = `/og/${ogPages[ogKey] ? ogKey : 'index'}.png`;
+
 const {
   title = t.common.defaultTitle,
   description = t.common.description,
-  image = SITE.ogImage,
+  image = generatedOg,
   type = 'website',
   noindex = false,
 } = Astro.props;
@@ -36,7 +45,9 @@ const alternates = getAlternateUrls(Astro.url.pathname, Astro.site!);
 // machine-readable facts about who HeyView is.
 const orgSchema = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
+  // Both types: Organization for entity grounding, ProfessionalService so
+  // search/AI can classify what we sell and where we operate.
+  '@type': ['Organization', 'ProfessionalService'],
   name: SITE.legalName,
   alternateName: SITE.name,
   url: Astro.site?.href,
@@ -45,6 +56,19 @@ const orgSchema = {
   inLanguage: locale,
   foundingLocation: SITE.country,
   founder: SITE.founders.map((name) => ({ '@type': 'Person', name })),
+  knowsLanguage: ['en', 'es'],
+  serviceType: [
+    'Document and process automation',
+    'AI customer-communication assistants',
+    'Operations dashboards',
+    'System integration',
+    'UI/UX and product design',
+  ],
+  areaServed: [
+    { '@type': 'Country', name: 'United States' },
+    { '@type': 'Country', name: 'Costa Rica' },
+    { '@type': 'Place', name: 'Latin America' },
+  ],
   sameAs: Object.values(SOCIALS),
 };
 const websiteSchema = {

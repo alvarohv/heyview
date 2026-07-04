@@ -1,0 +1,74 @@
+---
+import { getCollection } from 'astro:content';
+import { blogSlug } from '../content.config';
+import { useTranslations, getRelativeLocaleUrl } from '../i18n/utils';
+
+const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
+const t = useTranslations(locale).blogPage;
+
+const posts = (
+  await getCollection('blog', ({ data }) => !data.draft && data.lang === locale)
+).sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+
+const dateFmt = new Intl.DateTimeFormat(locale === 'es' ? 'es' : 'en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<main id="main-content">
+  <!-- ── Hero ── -->
+  <section class="grain bg-navy px-5 md:px-16 pt-20 pb-14">
+    <span class="eyebrow text-accent block mb-5">{t.eyebrow}</span>
+    <h1 class="font-serif text-[48px] md:text-[64px] text-cream font-light leading-tight mb-5">
+      {t.headline}
+    </h1>
+    <p class="font-sans text-[17px] leading-relaxed max-w-2xl" style="color: rgba(245,240,232,0.65);">
+      {t.subhead}
+    </p>
+  </section>
+
+  <!-- ── Article list ── -->
+  <section class="px-5 md:px-16 py-16 md:py-24 bg-cream">
+    {posts.length === 0 ? (
+      <p class="font-sans text-[17px] text-muted max-w-2xl">{t.empty}</p>
+    ) : (
+      <ul class="max-w-3xl flex flex-col">
+        {posts.map((post) => {
+          const href = getRelativeLocaleUrl(locale, `/blog/${blogSlug(post.id)}`);
+          return (
+            <li class="group" style="border-top: 0.5px solid #E7E1D6;">
+              <a href={href} class="block py-10 md:py-12">
+                <div class="flex flex-wrap items-center gap-3 mb-4">
+                  <time class="eyebrow text-accent" datetime={post.data.pubDate.toISOString()}>
+                    {dateFmt.format(post.data.pubDate)}
+                  </time>
+                  {post.data.tags.slice(0, 2).map((tag) => (
+                    <>
+                      <span class="w-1 h-1 rounded-full bg-navy/20" />
+                      <span class="eyebrow text-navy/40">{tag}</span>
+                    </>
+                  ))}
+                </div>
+                <h2 class="font-serif text-[26px] md:text-[32px] text-navy font-normal leading-snug group-hover:text-accent transition-colors duration-200">
+                  {post.data.title}
+                </h2>
+                <p class="font-sans text-[16px] leading-relaxed text-muted mt-3 max-w-2xl">
+                  {post.data.description}
+                </p>
+                <span class="inline-flex items-center gap-2 font-sans text-[12px] font-semibold tracking-widest uppercase text-navy group-hover:text-accent transition-colors duration-200 mt-5">
+                  <span class="underline-offset-4 group-hover:underline">{t.readMore}</span>
+                  <span
+                    class="material-symbols-outlined translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300"
+                    style="font-size: 16px; font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;"
+                  >arrow_forward</span>
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </section>
+</main>
