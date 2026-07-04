@@ -1,0 +1,10 @@
+{
+  // Static-only Cloudflare Worker: serves the Astro `dist/` output as
+  // static assets. No `main` / no Worker script because the site is 100%
+  // static (no SSR) — so the @astrojs/cloudflare adapter is NOT needed.
+  "name": "heyview",
+  "compatibility_date": "2026-07-03",
+  "assets": {
+    "directory": "./dist"
+  }
+}
