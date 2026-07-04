@@ -1,0 +1,4 @@
+# Cloudflare Pages redirects (301 by default).
+# Mirrors the redirect declared in astro.config.mjs so it works as a real
+# server redirect on Cloudflare, not just a client-side HTML refresh.
+/work/jnj-capacity-model  /work/capacity-planning-system  301
