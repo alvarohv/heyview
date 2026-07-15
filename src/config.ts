@@ -21,7 +21,7 @@ export const SITE = {
 
 /** Social / external profiles — drive JSON-LD `sameAs` and footer links. */
 export const SOCIALS = {
-  linkedin: 'https://www.linkedin.com/company/heyview', // TODO: confirm real handle
+  linkedin: 'https://www.linkedin.com/company/heyview',
 } as const;
 
 /**
