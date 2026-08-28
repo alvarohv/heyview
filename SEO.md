@@ -116,14 +116,15 @@ cost you citations. Use these exact strings on every profile:
 - **Name**: HeyView  ·  **Legal**: HeyView Studio
 - **One-liner**: *Design, automation, and AI studio for specialty practices and
   operations-heavy businesses.*
-- **Founder**: Alvaro Hernandez — AI & Systems Architect
+- **Founders**: Alvaro Hernandez — AI & Systems Architect · Sinaí Alfaro —
+  Design & Product Lead
 - **Location**: Costa Rica · serves the United States & Latin America (EN/ES)
 - **Site**: https://heyview.studio  ·  **LinkedIn**: (confirmed handle — set in
   `src/config.ts` → `SOCIALS.linkedin`)
 - **Categories/tags**: AI, Automation, Web Design, UX/UI, Software Development
 - **Longer bio** (for Crunchbase/Clutch "about"): *HeyView is a design,
-  automation, and AI studio founded in Costa Rica by Alvaro Hernandez. It
-  builds document and process automation, AI customer-communication
+  automation, and AI studio founded in Costa Rica by Alvaro Hernandez and
+  Sinaí Alfaro. It builds document and process automation, AI customer-communication
   assistants, operations dashboards, and custom system integrations on top of
   the software businesses already use. Fixed scope, senior hands, delivery in
   about four weeks.*

@@ -105,7 +105,7 @@ automatización](/services) en HeyView hoy. Puedes ver más de ese enfoque en
 el [trabajo](/work) que hemos entregado desde entonces.
 
 *Este proyecto es anterior a HeyView — se entregó de forma independiente en
-2023–2024, antes de que formalizara el estudio. TOPEX Labs más adelante se
-convirtió en cliente de HeyView para un proyecto distinto, un
+2023–2024, antes de que Sinaí y yo formalizáramos el estudio. TOPEX Labs
+más adelante se convirtió en cliente de HeyView para un proyecto distinto, un
 [diagnóstico de estrategia de AI](/work/topex-labs) sobre otra parte del
 negocio.*

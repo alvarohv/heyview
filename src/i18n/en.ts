@@ -89,14 +89,19 @@ export default {
     ],
   },
   about: {
-    headline: 'Built by an engineer seeking clarity.',
+    headline: 'Built by engineers and designers seeking clarity.',
     intro:
-      'HeyView was founded in Costa Rica by Alvaro Hernandez. 22 years building systems for hospitals, multinationals, and enterprise operations. Now applying that same rigor to businesses that deserve it, without the 18-month timeline.',
+      'HeyView was founded in Costa Rica by Alvaro Hernandez and Sinaí Alfaro. 22 years building systems for hospitals, multinationals, and enterprise operations. Now applying that same rigor to businesses that deserve it, without the 18-month timeline.',
     founders: [
       {
         name: 'Alvaro Hernandez',
         role: 'AI & Systems Architect',
         bio: '22 years in enterprise software and AI, architecting systems for healthcare, finance, and manufacturing, including Johnson & Johnson.',
+      },
+      {
+        name: 'Sinaí Alfaro',
+        role: 'Design & Product Lead',
+        bio: 'Designer focused on clarity and human-centered products. Leads UI/UX and brand.',
       },
     ],
   },
@@ -317,7 +322,7 @@ export default {
       },
       {
         q: 'Where is HeyView based?',
-        a: 'HeyView is based in Costa Rica and works with clients across the United States and Latin America, in English and Spanish. It was founded by Alvaro Hernandez (AI & Systems Architect).',
+        a: 'HeyView is based in Costa Rica and works with clients across the United States and Latin America, in English and Spanish. It was founded by Alvaro Hernandez (AI & Systems Architect) and Sinaí Alfaro (Design & Product Lead).',
       },
     ],
   },
