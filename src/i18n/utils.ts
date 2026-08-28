@@ -23,7 +23,13 @@ const translatedPaths = new Set(['/', '/services', '/work', '/health', '/blog'])
 const translatedPrefixes = ['/work/', '/blog/'];
 
 function isTranslatedPath(bare: string): boolean {
-  if (translatedPaths.has(bare)) return true;
+  // Astro serves these with a trailing slash ('/health/'), but the set above
+  // lists them bare. Without normalizing, the lookup misses and the language
+  // toggle silently falls back to the locale homepage — which is what used to
+  // happen on /es/health and /es/services. ('/work' and '/blog' escaped it
+  // only by matching translatedPrefixes.)
+  const normalized = bare.length > 1 ? bare.replace(/\/$/, '') : bare;
+  if (translatedPaths.has(normalized)) return true;
   return translatedPrefixes.some((prefix) => bare.startsWith(prefix));
 }
 
@@ -51,6 +57,21 @@ export function getSwitcherUrl(pathname: string, targetLocale: Locale): string {
     return targetLocale === 'es' ? getRelativeLocaleUrl('es', '/') : '/';
   }
   return targetLocale === 'es' ? getRelativeLocaleUrl('es', bare) : bare;
+}
+
+/** Locale-aware href that survives hash fragments and query strings.
+ *
+ *  `getRelativeLocaleUrl` treats its argument as a whole path and normalizes
+ *  it, so '/#about' comes back as '/#about/' — a trailing slash *inside* the
+ *  fragment, which is a dead anchor. Split the fragment/query off, localize
+ *  only the path portion, then reattach it verbatim.
+ *
+ *  Bare fragments ('#contact') resolve against the locale home ('/es/#contact')
+ *  so the link works from any page, not just the homepage. */
+export function localizedHref(locale: Locale, href: string): string {
+  const [, rawPath = '', suffix = ''] = href.match(/^([^?#]*)([?#].*)?$/) ?? [];
+  const path = rawPath === '' ? '/' : rawPath;
+  return getRelativeLocaleUrl(locale, path) + suffix;
 }
 
 export { getRelativeLocaleUrl };

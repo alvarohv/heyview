@@ -1,11 +1,11 @@
 ---
-import { useTranslations, getRelativeLocaleUrl } from '../i18n/utils';
+import { useTranslations, localizedHref } from '../i18n/utils';
 
 const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
 const t = useTranslations(locale).whoWeWorkWith;
 const verticals = t.verticals.map((v) => ({
   ...v,
-  href: v.localized ? getRelativeLocaleUrl(locale, v.href) : v.href,
+  href: v.localized ? localizedHref(locale, v.href) : v.href,
 }));
 ---
 

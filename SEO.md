@@ -46,7 +46,7 @@ You're waiting on the domain transfer before creating accounts. In order:
 2. **Google Search Console** — verify the domain (DNS TXT record is easiest during transfer), then submit `https://heyview.studio/sitemap-index.xml`.
 3. **Bing Webmaster Tools** — same; Bing also feeds ChatGPT search. Worth the 5 minutes.
 4. **Create the OG image** — `public/og-image.jpg`, **1200×630**, with logo + tagline. Referenced by `SITE.ogImage`; until it exists, social shares have no preview image. Validate with the [Facebook](https://developers.facebook.com/tools/debug/) and [LinkedIn](https://www.linkedin.com/post-inspector/) inspectors.
-5. **Confirm socials** — update `SOCIALS.linkedin` in `src/config.ts` with the real handle (currently a guess). This drives JSON-LD `sameAs` and the footer.
+5. ~~**Confirm socials**~~ — done. `SOCIALS.linkedin` in `src/config.ts` points at the live company page (`linkedin.com/company/heyview`), which drives JSON-LD `sameAs` and the footer.
 
 ### 2.2 — Analytics (PostHog + Microsoft Clarity)
 Both are client scripts. Add them to `Layout.astro` so they load site-wide.
@@ -93,8 +93,18 @@ const CLARITY_ID = import.meta.env.PUBLIC_CLARITY_ID;
 AI assistants cite sources they can corroborate. Build presence on properties
 they crawl heavily:
 - **LinkedIn company page** (and founders' profiles linking to the site).
-- **Google Business Profile** (even remote-first — establishes the entity).
-- Directory/listing on Clutch, The Manifest, or niche specialty-practice lists.
+- **Google Business Profile** — **eligibility check first.** Google requires
+  in-person contact with customers; businesses operating entirely online are
+  explicitly not eligible, and forcing it is the classic cause of suspension.
+  If we do meet clients face to face (CR clinic discovery, on-site interviews
+  like the TOPEX engagement), we qualify as a *service-area business*: give an
+  address for verification only, hide it, and publish a service area instead.
+  No PO box, no virtual office. Google suggests keeping the service area
+  within ~2 hours' drive of the base, so Alajuela → the whole GAM works; the
+  US does not belong in that field.
+- Directory/listing on Clutch or niche specialty-practice lists. A Clutch
+  profile automatically creates a **The Manifest** profile too — they're one
+  action, not two.
 - Anywhere you get mentioned, ensure the name is exactly **"HeyView"** and the
   one-line descriptor matches `llms.txt` (consistency = entity confidence).
 
@@ -106,24 +116,37 @@ cost you citations. Use these exact strings on every profile:
 - **Name**: HeyView  ·  **Legal**: HeyView Studio
 - **One-liner**: *Design, automation, and AI studio for specialty practices and
   operations-heavy businesses.*
-- **Founders**: Alvaro Hernandez — AI & Systems Architect · Sinaí Alfaro —
-  Design & Product Lead
+- **Founder**: Alvaro Hernandez — AI & Systems Architect
 - **Location**: Costa Rica · serves the United States & Latin America (EN/ES)
 - **Site**: https://heyview.studio  ·  **LinkedIn**: (confirmed handle — set in
   `src/config.ts` → `SOCIALS.linkedin`)
 - **Categories/tags**: AI, Automation, Web Design, UX/UI, Software Development
 - **Longer bio** (for Crunchbase/Clutch "about"): *HeyView is a design,
-  automation, and AI studio founded in Costa Rica by Alvaro Hernandez and Sinaí
-  Alfaro. It builds document and process automation, AI customer-communication
+  automation, and AI studio founded in Costa Rica by Alvaro Hernandez. It
+  builds document and process automation, AI customer-communication
   assistants, operations dashboards, and custom system integrations on top of
-  the software businesses already use — fixed scope, senior hands, ~four-week
-  delivery.*
+  the software businesses already use. Fixed scope, senior hands, delivery in
+  about four weeks.*
+
+  Paste this verbatim. No em dashes and no `~`, both of which read badly in
+  directory profiles and get mangled by some form fields. If you reword it for
+  one platform, reword it here too — divergent descriptions are exactly what
+  costs us entity confidence.
+- **Sales / contact email**: must be on the domain (not a personal address) and
+  actually monitored — Clutch routes lead notifications to it.
 
 **Where to create profiles (priority order):**
-1. **LinkedIn company page** — founders link their profiles to it.
-2. **Crunchbase** — org profile (one of the most-crawled entity sources).
-3. **Clutch** + **The Manifest** — B2B agency listings.
-4. **Google Business Profile** — establishes the entity even remote-first.
+1. **LinkedIn company page** — done, live at `/company/heyview`; founders
+   link their profiles to it.
+2. **Clutch** — free profile at [clutch.co/get-listed](https://clutch.co/get-listed)
+   (~20 min), then invite clients to review. Clutch's team verifies and
+   publishes each review, and the profile propagates to The Manifest for free.
+   Ranked above Crunchbase because Clutch doesn't care that we're remote and
+   its reviews are the citable third-party proof we currently have none of.
+3. **Crunchbase** — org profile (one of the most-crawled entity sources).
+4. **Google Business Profile** — only if the in-person-contact test above is
+   genuinely met. If it isn't, LinkedIn recommendations, Clutch reviews, and
+   on-site testimonials with `Review` schema are the substitute.
 
 ---
 
@@ -219,10 +242,15 @@ src/
 - Truly dynamic, per-user, or frequently-changing data (e.g. live dashboards).
   None of that applies to a portfolio.
 
-**Bottom line:** Skip the CMS/DB. Move from the hardcoded array → Content
-Collections + per-project pages. Same dev simplicity, but you unlock individual
-indexable URLs, which is where portfolio SEO actually lives. Ping me when ready
-and I'll scaffold it.
+**Bottom line:** Skip the CMS/DB. Content Collections + per-project pages.
+Same dev simplicity, but you unlock individual indexable URLs, which is where
+portfolio SEO actually lives.
+
+**Status: shipped.** This section reads as a recommendation because it was one;
+the migration is done. Six bilingual case studies live in `src/content/work/`,
+each at its own `/work/<slug>` (and `/es/work/<slug>`) with `CreativeWork`
+JSON-LD. The hardcoded array in `CaseStudies.astro` is gone — it and the `/work`
+index both read the collection through `WorkCard.astro`.
 
 ---
 
@@ -247,16 +275,31 @@ shipped — no redirects needed, no lost SEO equity.
   path; `getSwitcherUrl` computes where the navbar's language toggle should
   point, falling back to that locale's homepage if the current page has no
   translation yet (tracked in the `translatedPaths` set in that file).
+- **Use `localizedHref` for any link containing `#` or `?`.**
+  `getRelativeLocaleUrl` normalizes its whole argument as a path, so `/#about`
+  comes back as `/#about/` — a trailing slash *inside* the fragment, which is a
+  dead anchor. `localizedHref` splits the fragment/query off, localizes only the
+  path, and reattaches it. This shipped broken across the entire nav and footer
+  in both locales; don't reintroduce it by reaching for `getRelativeLocaleUrl`
+  on an anchor link.
+- **`translatedPaths` entries are matched slash-insensitively.** Astro serves
+  `/health/` but the set lists `/health`; before this was normalized, the
+  language toggle on `/es/health` and `/es/services` silently dumped users on
+  the English homepage. `/work` and `/blog` escaped it only because they also
+  matched `translatedPrefixes`. Add new routes bare (`/pricing`, not
+  `/pricing/`) and the normalization handles the rest.
 - **hreflang**: every page emits reciprocal `<link rel="alternate">` tags
   (`en`, `es`, `x-default`) in `Layout.astro`, and the sitemap integration is
   configured with matching `i18n.locales` so `sitemap-index.xml` carries the
   same signal.
-- **Coverage today**: homepage and `/services` are fully translated (Phase 2).
-  `/work`, `/health`, and `/privacy-policy` are English-only for now — see
-  `translatedPaths` in `src/i18n/utils.ts` to extend coverage as those ship.
-  The `work` content collection has no `lang` field yet; adding bilingual case
-  studies requires a schema change (locale-suffixed filenames + custom
-  `getStaticPaths`), not just dictionary entries.
+- **Coverage today**: homepage, `/services`, `/work`, `/health`, and `/blog`
+  are all fully translated, including every case study and blog post. The
+  `work` and `blog` collections carry a `lang` field with locale-suffixed
+  filenames (`coolbrand.en.md` / `coolbrand.es.md`), so the bilingual schema
+  change described in earlier drafts of this doc is already done.
+  **`/privacy-policy` is the only English-only page left** — it's deliberately
+  excluded from `translatedPaths` until legal copy gets a native-speaker pass,
+  so the ES footer links to the English version on purpose.
 - **Translation quality**: Spanish copy in `es.ts` was Claude-drafted (neutral
   Latin American / `es-419`) and should get a native-speaker review pass
   before being treated as final, especially anything customer-facing on the
@@ -283,24 +326,44 @@ Already done (in the repo):
 
 Do when domain is live:
 [ ] Pick www vs non-www; 301 the other
-[ ] Verify Google Search Console + submit sitemap
-[ ] Verify Bing Webmaster Tools + submit sitemap
+[ ] Verify Google Search Console + submit sitemap   ← nothing else is measurable
+[ ] Verify Bing Webmaster Tools + submit sitemap       until these two are done
 [x] OG images: auto-generated per-page branded cards at build (astro-og-canvas
     → /og/*.png; src/pages/og/[...route].ts + src/lib/og.ts). Validate live with
     the share inspectors once deployed.
-[ ] Update SOCIALS.linkedin in src/config.ts with real handle
+[x] SOCIALS.linkedin points at the live company page
+
+Off-site / entity (no code, highest leverage for a new domain):
+[x] LinkedIn company page
+[ ] Clutch profile (clutch.co/get-listed) — carries The Manifest for free
+[ ] Invite CoolBrand + TOPEX Labs to leave Clutch reviews
+[ ] Crunchbase org profile
+[ ] Google Business Profile — run the in-person-contact eligibility test in
+    §2.3 first; skip rather than risk a suspension
 
 Do when accounts exist:
 [ ] Add PostHog snippet (§2.2), key in .env
 [ ] Add Microsoft Clarity snippet (§2.2), id in .env
 [ ] Update privacy-policy.astro to name both tools
 
+Bilingual correctness (fixed 2026-08-10, see §6):
+[x] localizedHref — anchors no longer render as /#about/ across nav + footer
+[x] Language toggle on /es/health and /es/services reaches the EN equivalent
+    instead of falling back to the homepage
+[x] Wordmark, "view all work", and vertical cards respect the active locale
+[x] Stat counters server-render real values (crawlers were reading "0 years
+    in enterprise systems" as fact); count-up animation preserved for visitors
+[x] Process + ContactCTA counter scripts scoped to their own sections
+
 Content / structure (next build phase):
 [x] Migrate portfolio → Content Collections, one URL per project (§5)
 [x] Add CreativeWork JSON-LD per case study (work/[...slug].astro)
 [x] /work index + per-project pages; homepage teaser reads the collection
 [ ] Per-page title + description on remaining pages (privacy-policy)
-[ ] Fill in real case-study copy in src/content/work/*.md
+[x] Real case-study copy in src/content/work/*.md — 6 studies live, bilingual,
+    with hard numbers (350MB/143-sheet model, ~1,800 components, 0→100+ inquiries)
+[x] llms.txt lists all 6 case studies + both blog posts (was missing TOPEX
+    Labs, supply/demand planning, and the second post)
 [ ] Replace remote Google-CDN portfolio covers with local astro:assets
 [x] Add src/pages/404.astro (noindex, branded, with recovery links)
 [x] FAQ section on /services (bilingual) with FAQPage JSON-LD — question-shaped, AI-citable

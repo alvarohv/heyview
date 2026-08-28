@@ -58,7 +58,10 @@ const t = dict.process;
   </div>
 
   <script is:inline>
-    const counters = document.querySelectorAll('[data-count]');
+    // Scoped to this section: ContactCTA also uses [data-count], and an
+    // unscoped selector made the two scripts animate each other's numbers
+    // (these step labels are zero-padded, those stats are not).
+    const counters = document.querySelectorAll('#process [data-count]');
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (!entry.isIntersecting) return;

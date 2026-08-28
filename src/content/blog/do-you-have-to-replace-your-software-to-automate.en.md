@@ -92,6 +92,6 @@ HeyView today: map what you already run before proposing what to replace. You
 can see more of that approach in the [work](/work) we've delivered since.
 
 *This project predates HeyView — it was delivered independently in 2023–2024,
-before Sinaí and I formalized the studio. TOPEX Labs later became a HeyView
-client for a separate engagement, an [AI strategy diagnostic](/work/topex-labs)
-covering a different part of the business.*
+before I formalized the studio. TOPEX Labs later became a HeyView client for a
+separate engagement, an [AI strategy diagnostic](/work/topex-labs) covering a
+different part of the business.*

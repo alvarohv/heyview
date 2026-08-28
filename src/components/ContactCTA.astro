@@ -46,7 +46,7 @@ const stats = t.stats;
             style="font-size: clamp(2rem, 3.5vw, 3.25rem); letter-spacing: -0.03em;"
             data-count={stat.value}
             data-suffix={stat.suffix}
-          >0{stat.suffix}</span>
+          >{stat.value}{stat.suffix}</span>
           <span class="eyebrow text-navy/50 group-hover:text-navy/80 transition-colors duration-300 mt-1">{stat.label}</span>
         </div>
       ))}
@@ -54,7 +54,18 @@ const stats = t.stats;
   </div>
 
   <script>
-    const counters = document.querySelectorAll<HTMLElement>('[data-count]');
+    // The final value is server-rendered in the HTML on purpose: crawlers and
+    // LLM fetchers don't run JS, and they were reading the old "0" placeholder
+    // as literal fact ("0 years in enterprise systems"). JS resets to zero
+    // only once it's confirmed present, so the count-up still animates for
+    // real visitors while the markup stays truthful without it.
+    // Scoped to this section — Process.astro also uses [data-count] and
+    // zero-pads its step labels, so an unscoped selector cross-animates them.
+    const counters = document.querySelectorAll<HTMLElement>('#contact [data-count]');
+
+    counters.forEach((el) => {
+      el.textContent = '0' + (el.dataset.suffix ?? '');
+    });
 
     const animate = (el: HTMLElement) => {
       if (el.dataset.counted) return;

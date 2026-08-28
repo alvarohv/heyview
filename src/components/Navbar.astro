@@ -1,6 +1,6 @@
 ---
 import { CAL_LINK, CAL_NAMESPACE, CAL_CONFIG } from '../config';
-import { useTranslations, getRelativeLocaleUrl, getSwitcherUrl } from '../i18n/utils';
+import { useTranslations, getRelativeLocaleUrl, localizedHref, getSwitcherUrl } from '../i18n/utils';
 
 const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
 const t = useTranslations(locale);
@@ -16,8 +16,11 @@ const links = [
   { label: t.nav.contact,  href: '/#contact',   localized: true },
 ].map((link) => ({
   ...link,
-  href: link.localized ? getRelativeLocaleUrl(locale, link.href) : link.href,
+  href: link.localized ? localizedHref(locale, link.href) : link.href,
 }));
+
+// The wordmark must return to the *current* locale's home, not always English.
+const homeHref = getRelativeLocaleUrl(locale, '/');
 
 // Segmented EN/ES toggle: the active locale links to the current page,
 // the inactive one goes through getSwitcherUrl's translated-page fallback.
@@ -34,7 +37,7 @@ const esHref = locale === 'es' ? currentPath : getSwitcherUrl(currentPath, 'es')
   style="border-right: 0.5px solid var(--color-cream-border);"
 >
   <div class="flex items-center justify-between px-5 py-6" style="border-bottom: 0.5px solid var(--color-cream-border);">
-    <a href="/" class="font-serif text-[22px] font-semibold text-navy tracking-[0.5px]">HeyView</a>
+    <a href={homeHref} class="font-serif text-[22px] font-semibold text-navy tracking-[0.5px]">HeyView</a>
     <button id="nav-close" aria-label="Close menu" class="text-navy p-1">
       <span class="material-symbols-outlined text-[20px]">close</span>
     </button>
@@ -99,7 +102,7 @@ const esHref = locale === 'es' ? currentPath : getSwitcherUrl(currentPath, 'es')
     <button id="nav-open" aria-label="Open menu" aria-expanded="false" class="md:hidden text-navy p-1">
       <span class="material-symbols-outlined text-[22px]">menu</span>
     </button>
-    <a href="/" class="font-serif text-[22px] font-semibold text-navy tracking-[0.5px]">
+    <a href={homeHref} class="font-serif text-[22px] font-semibold text-navy tracking-[0.5px]">
       HeyView
     </a>
   </div>

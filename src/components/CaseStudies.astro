@@ -1,7 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import WorkCard from './WorkCard.astro';
-import { useTranslations } from '../i18n/utils';
+import { useTranslations, getRelativeLocaleUrl } from '../i18n/utils';
 
 const locale = Astro.currentLocale === 'es' ? 'es' : 'en';
 
@@ -23,7 +23,7 @@ const t = useTranslations(locale).caseStudies;
       <span class="eyebrow text-accent-green block mb-6">{t.eyebrow}</span>
       <h2 class="font-serif text-[32px] md:text-[40px] text-cream font-normal">{t.headline}</h2>
     </div>
-    <a href="/work" class="group inline-flex items-center gap-2 font-sans text-[13px] font-semibold tracking-widest uppercase text-muted-soft hover:text-cream transition-colors duration-200 whitespace-nowrap">
+    <a href={getRelativeLocaleUrl(locale, '/work')} class="group inline-flex items-center gap-2 font-sans text-[13px] font-semibold tracking-widest uppercase text-muted-soft hover:text-cream transition-colors duration-200 whitespace-nowrap">
       <span class="underline-offset-4 group-hover:underline">{t.viewAll}</span>
       <span
         class="material-symbols-outlined translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300"

@@ -7,7 +7,6 @@ const t = useTranslations(Astro.currentLocale).about;
 // the localized founder entries regardless of dictionary order.
 const images: Record<string, string> = {
   'Alvaro Hernandez': '/images/alvaro.jpeg',
-  'Sinaí Alfaro': '/images/sinai.jpg',
 };
 const founders = t.founders.map((founder) => ({ ...founder, img: images[founder.name] }));
 ---
@@ -29,7 +28,7 @@ const founders = t.founders.map((founder) => ({ ...founder, img: images[founder.
   </div>
 
   <!-- Founder cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class={`grid grid-cols-1 gap-6 ${founders.length > 1 ? 'md:grid-cols-2' : 'max-w-xl'}`}>
     {founders.map((founder) => (
       <div
         class="flex flex-col md:flex-row gap-8 items-center md:items-start p-8"

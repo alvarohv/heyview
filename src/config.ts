@@ -14,7 +14,7 @@ export const SITE = {
   shortName: 'HeyView',
   /** Default social-share image, served from /public. 1200×630 recommended. */
   ogImage: '/og-image.jpg',
-  founders: ['Alvaro Hernandez', 'Sinaí Alfaro'],
+  founders: ['Alvaro Hernandez'],
   /** Country of incorporation, for Organization schema. */
   country: 'Costa Rica',
 } as const;
